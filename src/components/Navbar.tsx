@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { supabase } from '../lib/supabaseClient';
@@ -21,6 +21,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const { user, signOut, isMock, profile } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLandingPage = location.pathname === '/';
+
+  const scrollToSection = (id: string) => {
+    if (id === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
   
   // Notification states
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -160,6 +173,42 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
               </div>
             </div>
           </div>
+
+          {/* Middle Navigation Links (visible only on Landing Page) */}
+          {isLandingPage && (
+            <nav className="hidden lg:flex items-center space-x-8 text-sm font-bold text-gray-650 dark:text-slate-300">
+              <button 
+                onClick={() => scrollToSection('home')} 
+                className="hover:text-primary-500 dark:hover:text-primary-400 transition-colors cursor-pointer focus:outline-none"
+              >
+                Home
+              </button>
+              <Link 
+                to="/browse" 
+                className="hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
+              >
+                Discover Swappers
+              </Link>
+              <button 
+                onClick={() => scrollToSection('how-it-works')} 
+                className="hover:text-primary-500 dark:hover:text-primary-400 transition-colors cursor-pointer focus:outline-none"
+              >
+                How It Works
+              </button>
+              <button 
+                onClick={() => scrollToSection('features')} 
+                className="hover:text-primary-500 dark:hover:text-primary-400 transition-colors cursor-pointer focus:outline-none"
+              >
+                Features
+              </button>
+              <button 
+                onClick={() => scrollToSection('about-us')} 
+                className="hover:text-primary-500 dark:hover:text-primary-400 transition-colors cursor-pointer focus:outline-none"
+              >
+                About Us
+              </button>
+            </nav>
+          )}
 
           <div className="flex items-center space-x-4">
             {isMock && (

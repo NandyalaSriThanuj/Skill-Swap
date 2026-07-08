@@ -96,7 +96,7 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* Hero Image/Card Panel */}
-        <div className="flex-1 mt-12 lg:mt-0 max-w-md mx-auto lg:max-w-none">
+        <div id="how-it-works" className="flex-1 mt-12 lg:mt-0 max-w-md mx-auto lg:max-w-none scroll-mt-24">
           <div className="relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
             {/* Top Swapper Showcase */}
             <div className="absolute -top-6 -right-6 p-4 bg-gradient-to-r from-secondary-500 to-primary-500 rounded-2xl shadow-lg text-white text-xs font-bold flex items-center space-x-2 animate-bounce-slow">
@@ -157,7 +157,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Features Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-gray-100 dark:border-slate-900">
+      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-gray-100 dark:border-slate-900 scroll-mt-20">
         <div className="text-center max-w-2xl mx-auto space-y-4 mb-16">
           <h2 className="font-heading font-extrabold text-3xl text-gray-900 dark:text-white">
             Designed for collaboration
@@ -220,7 +220,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Call To Action */}
-      <section className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-3xl max-w-7xl mx-4 sm:mx-6 lg:mx-auto px-8 py-16 text-center relative overflow-hidden shadow-xl mb-24">
+      <section id="about-us" className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-3xl max-w-7xl mx-4 sm:mx-6 lg:mx-auto px-8 py-16 text-center relative overflow-hidden shadow-xl mb-24 scroll-mt-20">
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-2xl -z-1"></div>
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-black/10 rounded-full blur-2xl -z-1"></div>
 
