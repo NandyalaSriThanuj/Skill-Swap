@@ -360,6 +360,13 @@ export const DashboardPage: React.FC = () => {
   // Check if profile is empty/needs setup
   const needsProfileSetup = profile.skills_teach.length === 0 && profile.skills_learn.length === 0;
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 bg-gray-50 dark:bg-slate-950 transition-colors duration-300">
       
@@ -369,7 +376,7 @@ export const DashboardPage: React.FC = () => {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-white">
-              Welcome back, {profile.full_name || 'Swapper'}!
+              {getGreeting()}, {profile.full_name || 'Swapper'}!
             </h1>
             <p className="text-primary-100 text-sm sm:text-base max-w-xl">
               Check out matches in your area, respond to swap proposals, or update your teaching portfolio.
@@ -544,7 +551,7 @@ export const DashboardPage: React.FC = () => {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search skill..."
-                      className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-805/45 border border-gray-200 dark:border-slate-750 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white transition-all"
+                      className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-gray-900 dark:text-white transition-all"
                     />
                   </div>
 
@@ -552,29 +559,29 @@ export const DashboardPage: React.FC = () => {
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-3 py-2 bg-gray-50 dark:bg-slate-805/45 border border-gray-200 dark:border-slate-750 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white transition-all cursor-pointer font-bold text-gray-700 dark:text-slate-350"
+                    className="px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-gray-750 dark:text-slate-200 transition-all cursor-pointer font-bold"
                   >
-                    <option value="All">All Categories</option>
-                    <option value="Programming">Programming</option>
-                    <option value="AI">Artificial Intelligence</option>
-                    <option value="Cloud">Cloud & DevOps</option>
-                    <option value="Database">Databases</option>
-                    <option value="Design">Design</option>
-                    <option value="Business">Business</option>
-                    <option value="Creative">Creative Skills</option>
-                    <option value="Lifestyle">Lifestyle</option>
+                    <option value="All" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">All Categories</option>
+                    <option value="Programming" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Programming</option>
+                    <option value="AI" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Artificial Intelligence</option>
+                    <option value="Cloud" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Cloud & DevOps</option>
+                    <option value="Database" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Databases</option>
+                    <option value="Design" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Design</option>
+                    <option value="Business" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Business</option>
+                    <option value="Creative" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Creative Skills</option>
+                    <option value="Lifestyle" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Lifestyle</option>
                   </select>
 
                   {/* Status Filter Dropdown */}
                   <select
                     value={selectedStatus}
                     onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="px-3 py-2 bg-gray-50 dark:bg-slate-805/45 border border-gray-200 dark:border-slate-750 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white transition-all cursor-pointer font-bold text-gray-700 dark:text-slate-355"
+                    className="px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-gray-750 dark:text-slate-200 transition-all cursor-pointer font-bold"
                   >
-                    <option value="All">All Statuses</option>
-                    <option value="Certified">Certified</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Failed">Failed</option>
+                    <option value="All" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">All Statuses</option>
+                    <option value="Certified" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Certified</option>
+                    <option value="Pending" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Pending</option>
+                    <option value="Failed" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white">Failed</option>
                   </select>
                 </div>
               )}

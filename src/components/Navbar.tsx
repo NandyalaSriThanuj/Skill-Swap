@@ -126,7 +126,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning,';
+    if (hour < 18) return 'Good afternoon,';
+    return 'Good evening,';
+  };
 
   return (
     <header className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-300">
@@ -146,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
             {/* Title / Breadcrumb could go here */}
             <div className="hidden lg:block ml-4 text-sm text-gray-800 dark:text-gray-200">
               <div className="text-[10px] text-gray-450 dark:text-slate-500 font-bold uppercase tracking-wider leading-none mb-1">
-                Welcome back,
+                {getGreeting()}
               </div>
               <div className="font-extrabold text-gray-900 dark:text-white flex items-center leading-none">
                 {profile?.full_name || user?.email?.split('@')[0] || 'Swapper'} 👋
