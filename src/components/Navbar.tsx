@@ -133,6 +133,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
     return 'Good evening,';
   };
 
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   return (
     <header className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-300">
       <div className="px-4 sm:px-6 lg:px-8">
