@@ -169,7 +169,7 @@ export const SkillsPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 bg-gray-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 transition-colors duration-300">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -184,7 +184,7 @@ export const SkillsPage: React.FC = () => {
         </div>
         <button
           onClick={handleOpenAddModal}
-          className="self-start sm:self-auto flex items-center space-x-1.5 px-4.5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-650 hover:to-primary-750 text-white font-semibold text-sm rounded-xl hover:shadow-lg shadow-primary-500/10 cursor-pointer"
+          className="btn-primary self-start sm:self-auto flex items-center space-x-1.5 px-4.5 py-2.5 shadow-primary-500/10 cursor-pointer"
         >
           <Plus className="w-4.5 h-4.5" />
           <span>Register Skill</span>
@@ -232,7 +232,7 @@ export const SkillsPage: React.FC = () => {
               {filteredSkills.map(skill => (
                 <div 
                   key={skill.id}
-                  className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between group"
+                  className="bg-surface border border-border p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between group"
                 >
                   <div className="flex items-center space-x-3.5 min-w-0">
                     <div className="p-2.5 bg-gray-50 dark:bg-slate-800 rounded-xl shrink-0">
@@ -268,7 +268,7 @@ export const SkillsPage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 p-12 rounded-3xl text-center space-y-4 shadow-sm max-w-sm mx-auto">
+            <div className="card-premium p-12 text-center space-y-4 max-w-sm mx-auto">
               <HelpCircle className="w-12 h-12 text-gray-300 mx-auto" />
               <div>
                 <h3 className="font-bold text-base text-gray-800 dark:text-white">No skills registered</h3>
@@ -284,7 +284,7 @@ export const SkillsPage: React.FC = () => {
         <div className="space-y-6">
           
           {/* Popular Skills list */}
-          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="card-premium p-6 space-y-4">
             <h3 className="font-heading font-extrabold text-base text-gray-905 dark:text-white flex items-center">
               <TrendingUp className="w-5 h-5 mr-2 text-primary-500" />
               Most Demanded Skills

@@ -5,7 +5,7 @@ const MOCK_INTERVIEW_SESSIONS_KEY = 'skillswap-mock-interview-sessions';
 const MOCK_MENTOR_ASSESSMENTS_KEY = 'skillswap-mock-mentor-assessments';
 
 // Helper to check if we should run in mock mode
-const isMockMode = !isSupabaseConfigured;
+const isMockMode = false;
 
 // Helper to get mock data from localStorage
 const getMockSessions = (): any[] => {
@@ -35,10 +35,12 @@ const mergeSessionAndAssessment = (session: any, assessment: any): Qualification
     mappedStatus = session.status === 'completed' ? 'in_progress' : session.status;
   }
 
-  let parsedReport = undefined;
+  let parsedReport: any = undefined;
   if (assessment?.report) {
     try {
-      parsedReport = assessment.report.startsWith('{') ? JSON.parse(assessment.report) : assessment.report;
+      parsedReport = (typeof assessment.report === 'string' && assessment.report.startsWith('{')) 
+        ? JSON.parse(assessment.report) 
+        : assessment.report;
     } catch (e) {
       parsedReport = assessment.report;
     }
@@ -56,9 +58,9 @@ const mergeSessionAndAssessment = (session: any, assessment: any): Qualification
     updated_at: session?.updated_at || assessment?.created_at,
     
     // Tiered evaluation attributes
-    technical_score: assessment?.technical_score || undefined,
-    communication_score: assessment?.communication_score || undefined,
-    teaching_score: assessment?.teaching_score || undefined,
+    technical_score: assessment?.technical_score || (parsedReport && typeof parsedReport === 'object' ? (parsedReport.detailed_scores?.technical_accuracy ?? parsedReport.detailed_scores?.technical_score) : undefined) || undefined,
+    communication_score: assessment?.communication_score || (parsedReport && typeof parsedReport === 'object' ? (parsedReport.detailed_scores?.communication ?? parsedReport.detailed_scores?.communication_score) : undefined) || undefined,
+    teaching_score: assessment?.teaching_score || (parsedReport && typeof parsedReport === 'object' ? (parsedReport.detailed_scores?.teaching_ability ?? parsedReport.detailed_scores?.teaching_score) : undefined) || undefined,
     badge: assessment?.badge || undefined,
     report: parsedReport,
     recommendation: assessment?.recommendation || undefined
@@ -108,7 +110,7 @@ export const qualificationService = {
         return mergeSessionAndAssessment(s, a);
       });
     } catch (err) {
-      console.error('Error in getUserSessions (falling back to mock):', err);
+      console.warn('Error in getUserSessions (falling back to mock):', err);
       // Mock fallback
       const sessions = getMockSessions().filter(s => s.user_id === userId);
       const assessments = getMockAssessments().filter(a => a.user_id === userId);
@@ -125,7 +127,8 @@ export const qualificationService = {
    * Fetches a specific qualification session by ID
    */
   async getSession(sessionId: string): Promise<QualificationSession | null> {
-    if (isMockMode) {
+    // If we're not configured or the ID is clearly a local mock ID, force mock retrieval
+    if (isMockMode || sessionId.startsWith('i-sess-')) {
       const allSessions = getMockSessions();
       const session = allSessions.find(s => s.id === sessionId);
       if (!session) return null;
@@ -153,7 +156,7 @@ export const qualificationService = {
 
       return mergeSessionAndAssessment(session, assessment);
     } catch (err) {
-      console.error(`Error fetching session ${sessionId} (falling back to mock):`, err);
+      console.warn(`Error fetching session ${sessionId} (falling back to mock):`, err);
       // Fallback
       const allSessions = getMockSessions();
       const session = allSessions.find(s => s.id === sessionId);
@@ -168,11 +171,19 @@ export const qualificationService = {
   /**
    * Creates a new qualification session for a user and skill
    */
-  async createSession(userId: string, skillName: string): Promise<QualificationSession> {
+  async createSession(userId: string, skillName: string, language: string = 'English'): Promise<QualificationSession> {
+    let welcomeMessage = `Welcome to the SkillSwap AI Qualification assessment for **${skillName}**! I am your AI evaluation agent. I will ask you a series of technical questions to assess your expertise in ${skillName}. Are you ready to begin?`;
+    
+    if (language === 'Hindi') {
+      welcomeMessage = `**${skillName}** के लिए स्किलस्वैप एआई योग्यता मूल्यांकन में आपका स्वागत है! मैं आपका एआई मूल्यांकन एजेंट हूं। मैं ${skillName} में आपकी विशेषज्ञता का आकलन करने के लिए आपसे तकनीकी प्रश्नों की एक श्रृंखला पूछूंगा। क्या आप शुरू करने के लिए तैयार हैं?`;
+    } else if (language === 'Telugu') {
+      welcomeMessage = `**${skillName}** కోసం స్కిల్‌స్వాప్ AI అర్హత అంచనాకు స్వాగతం! నేను మీ AI మూల్యాంకన ఏజెంట్‌ని. ${skillName} లో మీ నైపుణ్యాన్ని అంచనా వేయడానికి నేను మిమ్మల్ని కొన్ని సాంకేతిక ప్రశ్నలు అడుగుతాను. మీరు ప్రారంభించడానికి సిద్ధంగా ఉన్నారా?`;
+    }
+
     const defaultTranscript = [
       {
         role: 'assistant' as const,
-        content: `Welcome to the SkillSwap AI Qualification assessment for **${skillName}**! I am your AI evaluation agent. I will ask you a series of technical questions to assess your expertise in ${skillName}. Are you ready to begin?`
+        content: welcomeMessage
       }
     ];
 
@@ -200,25 +211,34 @@ export const qualificationService = {
     }
 
     try {
-      // Clean up previous active session and final assessment for a fresh retry
-      await supabase.from('mentor_assessments').delete().eq('user_id', userId).eq('skill', skillName);
-      await supabase.from('interview_sessions').delete().eq('user_id', userId).eq('skill', skillName);
-
+      // Instead of deleting (which fails if DELETE policies are missing), we use upsert to reset the interview session
       const { data, error } = await supabase
         .from('interview_sessions')
-        .insert({
+        .upsert({
           user_id: userId,
+          room_id: crypto.randomUUID(),
           skill: skillName,
           status: 'pending',
-          transcript: defaultTranscript
+          transcript: defaultTranscript,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,skill'
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Clean up previous final assessment if retaking (using soft try/catch to ignore RLS delete restrictions)
+      try {
+        await supabase.from('mentor_assessments').delete().eq('user_id', userId).eq('skill', skillName);
+      } catch (delErr) {
+        console.warn('Failed to delete old assessment record (ignoring):', delErr);
+      }
+
       return mergeSessionAndAssessment(data, null);
     } catch (err) {
-      console.error('Error creating qualification session in Supabase (falling back to mock):', err);
+      console.warn('Error creating qualification session in Supabase (falling back to mock):', err);
       // Mock fallback
       const allSessions = getMockSessions().filter(s => !(s.user_id === userId && s.skill.toLowerCase() === skillName.toLowerCase()));
       const allAssessments = getMockAssessments().filter(a => !(a.user_id === userId && a.skill.toLowerCase() === skillName.toLowerCase()));
@@ -248,7 +268,8 @@ export const qualificationService = {
   async updateSession(sessionId: string, updates: Partial<QualificationSession>): Promise<QualificationSession> {
     const updatedTime = new Date().toISOString();
     
-    if (isMockMode) {
+    // If not configured or if it's a mock session ID, update locally
+    if (isMockMode || sessionId.startsWith('i-sess-')) {
       const allSessions = getMockSessions();
       const index = allSessions.findIndex(s => s.id === sessionId);
       if (index === -1) throw new Error('Session not found');
@@ -326,7 +347,31 @@ export const qualificationService = {
       // Prepare assessment table updates if concluded
       let assessment = null;
       if (updates.status === 'passed' || updates.status === 'failed') {
-        const reportContent = typeof updates.report === 'object' ? JSON.stringify(updates.report) : (updates.report || updates.feedback);
+        // Build report structure that embeds sub-scores in detailed_scores
+        let reportObj: any = {};
+        if (updates.report) {
+          reportObj = typeof updates.report === 'object' ? updates.report : {};
+        } else if (updates.feedback) {
+          reportObj = { summary: updates.feedback };
+        }
+
+        if (!reportObj.detailed_scores) {
+          reportObj.detailed_scores = {
+            technical_accuracy: updates.technical_score ?? updates.score ?? 0,
+            communication: updates.communication_score ?? updates.score ?? 0,
+            teaching_ability: updates.teaching_score ?? updates.score ?? 0,
+            logical_thinking: updates.score ?? 0,
+            practical_experience: updates.technical_score ?? updates.score ?? 0,
+            problem_solving: updates.technical_score ?? updates.score ?? 0
+          };
+        } else {
+          // Sync scores
+          if (updates.technical_score !== undefined) reportObj.detailed_scores.technical_accuracy = updates.technical_score;
+          if (updates.communication_score !== undefined) reportObj.detailed_scores.communication = updates.communication_score;
+          if (updates.teaching_score !== undefined) reportObj.detailed_scores.teaching_ability = updates.teaching_score;
+        }
+
+        const reportContent = JSON.stringify(reportObj);
         const earnedBadge = updates.badge || (updates.status === 'passed' ? 'Verified Mentor' : 'Not Eligible');
         
         const { data: assData, error: assErr } = await supabase
@@ -338,16 +383,13 @@ export const qualificationService = {
             score: updates.score || 0,
             report: reportContent,
             badge: earnedBadge,
-            recommendation: updates.recommendation || updates.feedback,
-            technical_score: updates.technical_score,
-            communication_score: updates.communication_score,
-            teaching_score: updates.teaching_score
+            recommendation: updates.recommendation || updates.feedback
           }, {
             onConflict: 'user_id,skill'
           })
           .select()
           .single();
-
+ 
         if (assErr) throw assErr;
         assessment = assData;
       } else {
@@ -360,53 +402,11 @@ export const qualificationService = {
         
         assessment = assData;
       }
-
+ 
       return mergeSessionAndAssessment(session, assessment);
     } catch (err) {
-      console.error(`Error updating session ${sessionId} (falling back to mock):`, err);
-      // Fallback
-      const allSessions = getMockSessions();
-      const index = allSessions.findIndex(s => s.id === sessionId);
-      if (index === -1) throw new Error('Session not found');
-
-      const session = allSessions[index];
-      
-      if (updates.chat_history) {
-        session.transcript = updates.chat_history;
-      }
-      if (updates.status) {
-        session.status = (updates.status === 'passed' || updates.status === 'failed') ? 'completed' : updates.status;
-      }
-      session.updated_at = updatedTime;
-      allSessions[index] = session;
-      saveMockSessions(allSessions);
-
-      let assessment = null;
-      if (updates.status === 'passed' || updates.status === 'failed') {
-        const allAssessments = getMockAssessments().filter(a => !(a.user_id === session.user_id && a.skill.toLowerCase() === session.skill.toLowerCase()));
-        
-        assessment = {
-          id: `ass-${Math.random().toString(36).substr(2, 9)}`,
-          user_id: session.user_id,
-          skill: session.skill,
-          interview_transcript: updates.chat_history || session.transcript,
-          score: updates.score || 0,
-          report: typeof updates.report === 'object' ? JSON.stringify(updates.report) : (updates.report || updates.feedback),
-          badge: updates.badge || (updates.status === 'passed' ? 'Verified Mentor' : 'Not Eligible'),
-          recommendation: updates.recommendation || updates.feedback,
-          technical_score: updates.technical_score,
-          communication_score: updates.communication_score,
-          teaching_score: updates.teaching_score,
-          created_at: updatedTime
-        };
-        allAssessments.push(assessment);
-        saveMockAssessments(allAssessments);
-      } else {
-        const assessments = getMockAssessments();
-        assessment = assessments.find(a => a.user_id === session.user_id && a.skill.toLowerCase() === session.skill.toLowerCase()) || null;
-      }
-
-      return mergeSessionAndAssessment(session, assessment);
+      console.error(`Error updating session ${sessionId} in Supabase:`, err);
+      throw err;
     }
   },
 
@@ -429,10 +429,40 @@ export const qualificationService = {
       if (error) throw error;
       return (assessments || []).map(a => mergeSessionAndAssessment(null, a));
     } catch (err) {
-      console.error('Error fetching all passed sessions:', err);
+      console.warn('Error fetching all passed sessions (falling back to mock):', err);
       // Fallback
       const assessments = getMockAssessments().filter(a => a.badge !== 'Not Eligible');
       return assessments.map(a => mergeSessionAndAssessment(null, a));
     }
+  },
+
+  /**
+   * Updates the user's profile with the latest interview results.
+   */
+  async updateProfileAfterInterview(userId: string, data: any): Promise<void> {
+    if (isMockMode) {
+      const stored = localStorage.getItem('skillswap-mock-profiles');
+      if (stored) {
+        const profiles = JSON.parse(stored);
+        const index = profiles.findIndex((p: any) => p.id === userId);
+        if (index !== -1) {
+          profiles[index] = { ...profiles[index], ...data };
+          localStorage.setItem('skillswap-mock-profiles', JSON.stringify(profiles));
+        }
+      }
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('id', userId);
+      
+      if (error) throw error;
+    } catch (err) {
+      console.warn('Error updating profile after interview (falling back to mock):', err);
+    }
   }
 };
+

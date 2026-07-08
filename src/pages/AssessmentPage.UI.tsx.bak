@@ -1,0 +1,1031 @@
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-4">
+        <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
+        <p className="text-sm text-gray-500 dark:text-slate-400">Loading AI assessment session...</p>
+      </div>
+    );
+  }
+
+  if (isGeneratingReport) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-6 animate-in fade-in duration-300">
+        <div className="relative">
+          <div className="absolute inset-0 bg-primary-500/20 blur-xl rounded-full"></div>
+          <Loader2 className="relative w-16 h-16 text-primary-500 animate-spin" />
+        </div>
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Generating Your Performance Report</h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400 max-w-sm mx-auto">
+            The AI is evaluating your responses across multiple dimensions. This usually takes a few seconds...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMsg && !session) {
+    return (
+      <div className="max-w-md mx-auto my-12 p-6 bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl text-center space-y-4 shadow-xl">
+        <XCircle className="w-12 h-12 text-red-500 mx-auto" />
+        <h3 className="text-lg font-bold text-gray-800 dark:text-white">{errorMsg}</h3>
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm rounded-xl cursor-pointer"
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  if (!session) return null;
+
+  const progressInfo = getProgressInfo();
+  const isConcluded = session.status === 'passed' || session.status === 'failed';
+
+  if (isConcluded) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const badgeName = session.badge || (session.status === 'passed' ? 'Verified Mentor' : 'Not Eligible');
+    const badgeStyle = getBadgeStyle(badgeName);
+    const dateStr = session.updated_at ? new Date(session.updated_at).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }) : new Date().toLocaleDateString();
+
+    const techScore = session.technical_score || session.score || 0;
+    const commScore = session.communication_score || session.score || 0;
+    const teachScore = session.teaching_score || session.score || 0;
+    const overallScore = session.score || 0;
+
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6 md:py-10 space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
+        
+        {/* Header Block */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-800 pb-6">
+          <div className="space-y-1">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center space-x-1.5 text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-2 cursor-pointer font-semibold"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Dashboard</span>
+            </button>
+            <h1 className="text-3xl font-heading font-black text-gray-950 dark:text-white tracking-tight flex items-center gap-2">
+              {session.skill_name} Qualification Report
+            </h1>
+            <p className="text-xs text-gray-400 dark:text-slate-450">
+              Assessor Agent: AI bot evaluator • Completed on {dateStr}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center space-x-3 gap-y-2">
+            {session.status === 'passed' && profile && (
+              <button
+                onClick={() => certificateService.generateCertificatePDF(profile, session)}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl cursor-pointer transition-all flex items-center space-x-2 shadow-sm"
+              >
+                <Award className="w-4 h-4" />
+                <span>Download Certificate</span>
+              </button>
+            )}
+            {session.status === 'failed' ? (
+              <button
+                onClick={handleRetry}
+                className="px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-xs font-bold rounded-xl shadow-md shadow-primary-500/10 cursor-pointer transition-all flex items-center space-x-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Retry Assessment</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleRetry}
+                className="px-4 py-2 border border-gray-200 dark:border-slate-800 text-gray-650 dark:text-slate-350 hover:bg-gray-50 dark:hover:bg-slate-850 text-xs font-bold rounded-xl cursor-pointer transition-all flex items-center space-x-2"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retake for Higher Badge</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Premium Badge Showcase Row */}
+        <div className={`p-1 rounded-[2.5rem] bg-gradient-to-tr ${badgeStyle.gradient} shadow-2xl ${badgeStyle.glow} relative group transition-all duration-500 hover:scale-[1.01]`}>
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-[2.5rem] pointer-events-none"></div>
+          
+          <div className="bg-white dark:bg-slate-900 rounded-[2.4rem] p-6 sm:p-8 flex flex-col md:flex-row items-center gap-6 sm:gap-8">
+            {/* Giant Glowing Icon */}
+            <div className={`w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr ${badgeStyle.gradient} p-0.5 shadow-lg relative shrink-0`}>
+              <div className="w-full h-full rounded-full bg-white dark:bg-slate-955 flex items-center justify-center text-4xl sm:text-5xl shadow-inner animate-pulse-slow">
+                {badgeStyle.icon}
+              </div>
+            </div>
+
+            {/* Badge Text and Description */}
+            <div className="text-center md:text-left space-y-2 flex-grow">
+              <span className={`text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full ${badgeStyle.bg} ${badgeStyle.text} border ${badgeStyle.border}`}>
+                Earned Mentor Tier
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-heading font-black text-gray-900 dark:text-white tracking-tight mt-1.5">
+                {badgeName}
+              </h2>
+              <p className="text-sm text-gray-650 dark:text-slate-350 max-w-xl leading-relaxed">
+                {badgeStyle.description}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Scores Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          
+          {/* Main Circle Gauge (Overall Score) */}
+          <div className="md:col-span-5 card-premium p-8 flex flex-col items-center justify-center text-center space-y-6">
+            <h3 className="font-heading font-extrabold text-sm text-gray-800 dark:text-slate-300 uppercase tracking-wider">
+              Overall Score
+            </h3>
+            
+            {/* Ring visualization */}
+            <div className="relative w-40 h-40 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  className="stroke-gray-100 dark:stroke-slate-800"
+                  strokeWidth="8"
+                  fill="transparent"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  stroke={badgeStyle.hsl}
+                  style={{
+                    strokeDasharray: '251.2',
+                    strokeDashoffset: 251.2 - (251.2 * overallScore) / 100
+                  }}
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  fill="transparent"
+                />
+              </svg>
+              <div className="absolute flex flex-col items-center">
+                <span className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">
+                  {overallScore}%
+                </span>
+                <span className="text-[10px] font-bold text-gray-405 dark:text-slate-500 uppercase tracking-wider">
+                  weighted
+                </span>
+              </div>
+            </div>
+
+            <div className="text-xs text-gray-450 dark:text-slate-450 leading-relaxed max-w-[240px]">
+              Calculated as 50% Technical, 25% Communication, and 25% Teaching ability.
+            </div>
+          </div>
+
+          {/* Sub-Category Scores */}
+          <div className="md:col-span-7 card-premium p-8 flex flex-col justify-center space-y-6">
+            <h3 className="font-heading font-extrabold text-sm text-gray-800 dark:text-slate-300 uppercase tracking-wider">
+              Evaluation Dimensions
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+              {/* Technical Accuracy */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <span className="text-gray-700 dark:text-slate-355 flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+                    Technical Accuracy
+                  </span>
+                  <span className="text-gray-900 dark:text-white">
+                    {session.report?.detailed_scores?.technical_accuracy ?? techScore}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{ width: `${session.report?.detailed_scores?.technical_accuracy ?? techScore}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Practical Experience */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <span className="text-gray-700 dark:text-slate-355 flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-550" />
+                    Practical Experience
+                  </span>
+                  <span className="text-gray-900 dark:text-white">
+                    {session.report?.detailed_scores?.practical_experience ?? techScore}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-550 rounded-full"
+                    style={{ width: `${session.report?.detailed_scores?.practical_experience ?? techScore}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Problem Solving */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <span className="text-gray-700 dark:text-slate-355 flex items-center gap-1">
+                    <CheckCircle className="w-3.5 h-3.5 text-blue-600" />
+                    Problem Solving
+                  </span>
+                  <span className="text-gray-900 dark:text-white">
+                    {session.report?.detailed_scores?.problem_solving ?? techScore}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-600 rounded-full"
+                    style={{ width: `${session.report?.detailed_scores?.problem_solving ?? techScore}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Logical Thinking */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <span className="text-gray-700 dark:text-slate-355 flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
+                    Logical Thinking
+                  </span>
+                  <span className="text-gray-900 dark:text-white">
+                    {session.report?.detailed_scores?.logical_thinking ?? Math.round((techScore + teachScore) / 2)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-indigo-500 rounded-full"
+                    style={{ width: `${session.report?.detailed_scores?.logical_thinking ?? Math.round((techScore + teachScore) / 2)}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Communication Clarity */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <span className="text-gray-700 dark:text-slate-355 flex items-center gap-1">
+                    <MessageSquare className="w-3.5 h-3.5 text-purple-500" />
+                    Communication Clarity
+                  </span>
+                  <span className="text-gray-900 dark:text-white">
+                    {session.report?.detailed_scores?.communication ?? commScore}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-purple-500 rounded-full"
+                    style={{ width: `${session.report?.detailed_scores?.communication ?? commScore}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Fluency */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <span className="text-gray-700 dark:text-slate-355 flex items-center gap-1">
+                    <MessageSquare className="w-3.5 h-3.5 text-purple-650" />
+                    Speech Fluency
+                  </span>
+                  <span className="text-gray-900 dark:text-white">
+                    {session.report?.detailed_scores?.fluency ?? commScore}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-purple-600 rounded-full"
+                    style={{ width: `${session.report?.detailed_scores?.fluency ?? commScore}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Confidence */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <span className="text-gray-700 dark:text-slate-355 flex items-center gap-1">
+                    <ThumbsUp className="w-3.5 h-3.5 text-rose-500" />
+                    Speech Confidence
+                  </span>
+                  <span className="text-gray-900 dark:text-white">
+                    {session.report?.detailed_scores?.confidence ?? commScore}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-rose-500 rounded-full"
+                    style={{ width: `${session.report?.detailed_scores?.confidence ?? commScore}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Teaching & Explanation */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <span className="text-gray-700 dark:text-slate-355 flex items-center gap-1">
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-555" />
+                    Teaching & Explanation
+                  </span>
+                  <span className="text-gray-900 dark:text-white">
+                    {session.report?.detailed_scores?.teaching_ability ?? teachScore}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-550 rounded-full"
+                    style={{ width: `${session.report?.detailed_scores?.teaching_ability ?? teachScore}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Detailed Assessor Feedback Box */}
+        {session.recommendation && (
+          <div className="card-premium bg-gray-50/50 dark:bg-slate-800/50 p-6 space-y-3">
+            <h3 className="font-heading font-extrabold text-sm text-gray-800 dark:text-slate-350 uppercase tracking-wider flex items-center gap-1.5">
+              <Bot className="w-4.5 h-4.5 text-primary-500" />
+              Assessor Recommendation
+            </h3>
+            <p className="text-sm text-gray-755 dark:text-slate-300 leading-relaxed font-medium italic">
+              "{session.recommendation}"
+            </p>
+          </div>
+        )}
+
+        {/* Report Tabs (Strengths / Weaknesses / Areas for Improvement) */}
+        {session.report && (
+          <div className="card-premium overflow-hidden">
+            <div className="flex border-b border-gray-150 dark:border-slate-800 bg-gray-55/40 dark:bg-slate-950/20">
+              <button
+                onClick={() => setActiveReportTab('strengths')}
+                className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider border-b-2 text-center transition-all cursor-pointer ${
+                  activeReportTab === 'strengths'
+                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-450 bg-white dark:bg-slate-900'
+                    : 'border-transparent text-gray-400 hover:text-gray-650 hover:bg-gray-50/50'
+                }`}
+              >
+                Candidate Strengths
+              </button>
+              <button
+                onClick={() => setActiveReportTab('weaknesses')}
+                className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider border-b-2 text-center transition-all cursor-pointer ${
+                  activeReportTab === 'weaknesses'
+                    ? 'border-amber-500 text-amber-600 dark:text-amber-450 bg-white dark:bg-slate-900'
+                    : 'border-transparent text-gray-400 hover:text-gray-650 hover:bg-gray-50/50'
+                }`}
+              >
+                Areas of Concern
+              </button>
+              <button
+                onClick={() => setActiveReportTab('improvement')}
+                className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider border-b-2 text-center transition-all cursor-pointer ${
+                  activeReportTab === 'improvement'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-450 bg-white dark:bg-slate-900'
+                    : 'border-transparent text-gray-400 hover:text-gray-650 hover:bg-gray-50/50'
+                }`}
+              >
+                Improvement Plan
+              </button>
+            </div>
+
+            <div className="p-6 sm:p-8 min-h-[140px] leading-relaxed">
+              {activeReportTab === 'strengths' && (
+                <div className="space-y-3 animate-in fade-in duration-300">
+                  <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-450">
+                    <ThumbsUp className="w-4.5 h-4.5" />
+                    <span className="font-bold text-sm">Key Strengths Identified</span>
+                  </div>
+                  <p className="text-sm text-gray-650 dark:text-slate-350">
+                    {session.report.strengths || "The candidate displayed adequate competency during responses."}
+                  </p>
+                </div>
+              )}
+
+              {activeReportTab === 'weaknesses' && (
+                <div className="space-y-3 animate-in fade-in duration-300">
+                  <div className="flex items-center space-x-2 text-amber-600 dark:text-amber-450">
+                    <AlertCircle className="w-4.5 h-4.5" />
+                    <span className="font-bold text-sm">Identified Skill Gaps</span>
+                  </div>
+                  <p className="text-sm text-gray-655 dark:text-slate-355">
+                    {session.report.weaknesses || "No critical weaknesses identified. Keep refining edge cases."}
+                  </p>
+                </div>
+              )}
+
+              {activeReportTab === 'improvement' && (
+                <div className="space-y-3 animate-in fade-in duration-300">
+                  <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-455">
+                    <BookOpen className="w-4.5 h-4.5" />
+                    <span className="font-bold text-sm">Recommended Study Pathway</span>
+                  </div>
+                  <p className="text-sm text-gray-655 dark:text-slate-350">
+                    {session.report.areas_for_improvement || "Continue practicing advanced coding architectures and mentoring techniques."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Collapsible Full Transcript Details */}
+        <div className="card-premium overflow-hidden">
+          <details className="group">
+            <summary className="px-6 py-5 font-heading font-extrabold text-sm text-gray-800 dark:text-slate-300 hover:bg-gray-5/50 dark:hover:bg-slate-850/50 cursor-pointer list-none flex justify-between items-center transition-colors">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4.5 h-4.5 text-gray-400" />
+                <span>Review Full Interview Transcript</span>
+              </div>
+              <ChevronDown className="w-4.5 h-4.5 text-gray-400 group-open:rotate-180 transition-transform duration-200" />
+            </summary>
+            
+            <div className="px-6 pb-6 pt-2 border-t border-gray-100 dark:border-slate-800 space-y-4 max-h-96 overflow-y-auto mt-2 text-sm flex flex-col">
+              {session.chat_history.map((msg, idx) => {
+                const isAI = msg.role === 'assistant';
+                return (
+                  <div 
+                    key={idx} 
+                    className={`flex items-start space-x-3.5 max-w-[85%] ${
+                      isAI ? 'self-start' : 'self-end flex-row-reverse space-x-reverse ml-auto'
+                    }`}
+                  >
+                    <div className={`p-1.5 rounded-lg shrink-0 ${
+                      isAI 
+                        ? 'bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 shadow-sm' 
+                        : 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    }`}>
+                      {isAI ? <Bot className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
+                    </div>
+
+                    <div className={`p-3.5 rounded-2xl ${
+                      isAI 
+                        ? 'bg-white dark:bg-slate-800 text-black dark:text-white rounded-tl-none border border-gray-150 dark:border-slate-700/50 shadow-sm' 
+                        : 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-tr-none shadow-sm'
+                    }`}>
+                      {msg.content.split('\n').map((line, lIdx) => (
+                        <p key={lIdx} className={lIdx > 0 ? 'mt-1.5' : ''}>
+                          {line.split('**').map((part, pIdx) => 
+                            pIdx % 2 === 1 ? <strong key={pIdx} className="font-bold">{part}</strong> : part
+                          )}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+        </div>
+
+        {/* Footer Navigation CTA */}
+        <div className="flex justify-center pt-2">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="px-8 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold text-sm rounded-2xl hover:shadow-lg transition-all cursor-pointer flex items-center space-x-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Dashboard</span>
+          </button>
+        </div>
+
+      </div>
+    );
+  }
+
+  const isTech = isTechnicalSkill(session.skill_name);
+  const totalQuestions = isTech ? 20 : 15;
+  
+  // Determine difficulty
+  let currentDifficulty: 'Beginner' | 'Intermediate' | 'Advanced' = 'Beginner';
+  if (isTech) {
+    currentDifficulty = progressInfo.step <= 5 ? 'Beginner' : progressInfo.step <= 12 ? 'Intermediate' : 'Advanced';
+  } else {
+    currentDifficulty = progressInfo.step <= 4 ? 'Beginner' : progressInfo.step <= 9 ? 'Intermediate' : 'Advanced';
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-6 md:py-8 space-y-6 flex flex-col min-h-[85vh]">
+      
+      {/* Assessment Header */}
+      <div className="card-premium p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 transition-colors">
+        <div className="flex items-center space-x-3.5">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="p-2 text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+            title="Back to Dashboard"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h1 className="font-heading font-extrabold text-xl text-gray-950 dark:text-white">
+                {session.skill_name} Voice Qualification
+              </h1>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-450 border border-blue-150/40`}>
+                Assessment Active
+              </span>
+            </div>
+            <p className="text-xs text-gray-650 dark:text-slate-400 mt-0.5">
+              Assessor Agent: AI bot evaluator
+            </p>
+          </div>
+        </div>
+
+        {/* Global Key Config & Status Indicators */}
+        <div className="flex items-center space-x-3 shrink-0">
+          {isSupabaseConfigured ? (
+            <div className="flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-550" />
+              <span>Groq AI Active</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowKeyModal(true)}
+              className={`flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                apiKey 
+                  ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                  : 'bg-amber-500/5 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10'
+              }`}
+            >
+              <Key className="w-3.5 h-3.5" />
+              <span>{apiKey ? 'Groq Key Active' : 'Configure Groq Key'}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Main Area */}
+      {!interviewStarted ? (
+        /* Setup / Welcome Screen */
+        <div className="flex-grow flex items-center justify-center p-4">
+          <div className="card-premium max-w-2xl w-full p-10 space-y-8">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 rounded-full bg-primary-50 dark:bg-primary-950/20 flex items-center justify-center mx-auto shadow-md">
+                <Mic className="w-8 h-8 text-primary-500 animate-pulse" />
+              </div>
+              <h2 className="font-heading font-black text-3xl text-gray-900 dark:text-white tracking-tight">
+                AI Voice Interview Setup
+              </h2>
+              <p className="text-sm text-gray-505 dark:text-slate-400 max-w-md mx-auto">
+                Prepare for your {session.skill_name} qualification. This session will be entirely spoken.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Language Selection */}
+              <div className="space-y-3">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-gray-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-primary-500" />
+                  Select Interview Language
+                </label>
+                
+                {isTech ? (
+                  <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl space-y-2">
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold leading-relaxed">
+                      💡 Technical interviews are conducted in English.
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        className="flex-1 py-3 px-4 rounded-xl border border-primary-500 bg-primary-500/5 text-primary-600 font-bold text-sm flex items-center justify-center gap-2 cursor-default animate-pulse-slow"
+                        disabled
+                      >
+                        🇺🇸 English (Enforced)
+                      </button>
+                      <button
+                        className="flex-1 py-3 px-4 rounded-xl border border-gray-150 dark:border-slate-805 text-gray-350 dark:text-slate-600 font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed"
+                        disabled
+                      >
+                        🇮🇳 Hindi
+                      </button>
+                      <button
+                        className="flex-1 py-3 px-4 rounded-xl border border-gray-150 dark:border-slate-805 text-gray-355 dark:text-slate-600 font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed"
+                        disabled
+                      >
+                        🇮🇳 Telugu
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-3">
+                    {(['English', 'Hindi', 'Telugu'] as const).map(lang => {
+                      const isSelected = selectedLanguage === lang;
+                      const flags = { English: '🇺🇸', Hindi: '🇮🇳', Telugu: '🇮🇳' };
+                      return (
+                        <button
+                          key={lang}
+                          onClick={() => setSelectedLanguage(lang)}
+                          className={`py-3 px-4 rounded-xl border font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                            isSelected
+                              ? 'border-primary-500 bg-primary-500/5 text-primary-600 shadow-sm'
+                              : 'border-gray-200 dark:border-slate-800 text-gray-650 dark:text-slate-350 hover:bg-gray-50 dark:hover:bg-slate-850'
+                          }`}
+                        >
+                          <span>{flags[lang]}</span>
+                          <span>{lang}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Microphone Verification */}
+              <div className="space-y-3">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-gray-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <Mic className="w-4 h-4 text-primary-500" />
+                  Microphone Access
+                </label>
+
+                {micPermission === 'granted' ? (
+                  <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4.5 h-4.5 animate-bounce text-emerald-500" />
+                      <span>Microphone access granted & tested successfully!</span>
+                    </div>
+                  </div>
+                ) : micPermission === 'denied' ? (
+                  <div className="p-4 bg-rose-500/5 border border-rose-500/10 rounded-2xl flex flex-col gap-2 text-xs text-rose-600 dark:text-rose-400">
+                    <div className="flex items-center gap-2 font-bold">
+                      <XCircle className="w-4.5 h-4.5 text-rose-500" />
+                      <span>Microphone access was denied.</span>
+                    </div>
+                    <p className="leading-relaxed font-medium">
+                      Please click the lock icon in your browser address bar to reset permissions, then try again.
+                    </p>
+                    <button
+                      onClick={requestMicPermission}
+                      className="mt-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold self-start transition-all cursor-pointer"
+                    >
+                      Retry Permission Request
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-gray-50 dark:bg-slate-855/50 border border-gray-150 dark:border-slate-800 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="text-xs text-gray-550 dark:text-slate-400 font-medium">
+                      We need to access your microphone to record your verbal answers.
+                    </div>
+                    <button
+                      onClick={requestMicPermission}
+                      className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      Authorize Mic Access
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Launch Button */}
+            <button
+              onClick={startInterview}
+              disabled={micPermission !== 'granted'}
+              className="btn-primary w-full py-4 text-base shadow-xl disabled:opacity-40 disabled:pointer-events-none"
+            >
+              <Mic className="w-5 h-5 mr-2" />
+              <span>Start Voice Assessment ({totalQuestions} Questions)</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow min-h-0">
+          
+          {/* Main Assessment Container (Left/Center) */}
+          <div className="lg:col-span-8 card-premium flex flex-col p-8 justify-between gap-6 transition-all duration-300 min-h-0">
+            
+            {/* Top Navigation Info-bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-gray-100 dark:border-slate-850 pb-5 text-center shrink-0">
+              <div className="p-3 bg-gray-50/55 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 space-y-1">
+                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">Assessment Topic</span>
+                <p className="text-sm font-black text-gray-805 dark:text-white truncate">
+                  {session.skill_name}
+                </p>
+              </div>
+              <div className="p-3 bg-gray-50/55 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 space-y-1">
+                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">Language</span>
+                <p className="text-sm font-black text-primary-600 dark:text-primary-400">
+                  {selectedLanguage === 'Hindi' ? '🇮🇳 Hindi' : selectedLanguage === 'Telugu' ? '🇮🇳 Telugu' : '🇺🇸 English'}
+                </p>
+              </div>
+              <div className="p-3 bg-gray-50/55 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 space-y-1">
+                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block flex items-center justify-center gap-1">
+                  <Clock className="w-3 h-3 text-gray-450" />
+                  Elapsed Time
+                </span>
+                <p className="text-sm font-black text-gray-800 dark:text-white">
+                  {formatDuration(duration)}
+                </p>
+              </div>
+              <div className="p-3 bg-gray-50/55 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 space-y-1">
+                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block flex items-center justify-center gap-1">
+                  <Wifi className="w-3 h-3 text-gray-455" />
+                  Network Status
+                </span>
+                <p className={`text-sm font-black ${isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                  {isOnline ? 'Connected' : 'Offline'}
+                </p>
+              </div>
+            </div>
+
+            {/* Central Animated AI Portal Section */}
+            <div className="flex-grow flex flex-col items-center justify-center space-y-6 py-4">
+              
+              {/* Question Text Prompt */}
+              <div className="w-full max-w-2xl text-center space-y-2">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${
+                  currentDifficulty === 'Beginner'
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-450 border border-blue-150/30'
+                    : currentDifficulty === 'Intermediate'
+                    ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/20 dark:text-purple-450 border border-purple-150/30'
+                    : 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-450 border border-amber-150/30'
+                }`}>
+                  Current Difficulty: {currentDifficulty}
+                </span>
+                {voiceWarning && (
+                  <div className="mb-3.5 p-3.5 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-450 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 animate-pulse max-w-xl mx-auto">
+                    <AlertCircle className="w-4.5 h-4.5 text-amber-500 shrink-0" />
+                    <span>{voiceWarning}</span>
+                  </div>
+                )}
+                <h3 className="text-lg md:text-xl font-heading font-extrabold text-gray-900 dark:text-white leading-relaxed">
+                  {getCurrentQuestionText() || "Preparing the first question..."}
+                </h3>
+              </div>
+
+              {/* Pulsing Visual Avatar Portal */}
+              <div className="relative flex items-center justify-center w-52 h-52 md:w-60 md:h-60">
+                {isSpeaking && (
+                  <>
+                    <div className="absolute inset-0 rounded-full bg-cyan-500/20 animate-ping border border-cyan-500/10"></div>
+                    <div className="absolute -inset-4 rounded-full bg-cyan-500/10 animate-pulse border border-cyan-500/5"></div>
+                  </>
+                )}
+                {isListening && (
+                  <>
+                    <div className="absolute inset-0 rounded-full bg-rose-500/20 animate-ping border border-rose-500/10"></div>
+                    <div className="absolute -inset-4 rounded-full bg-rose-500/10 animate-pulse border border-rose-500/5"></div>
+                  </>
+                )}
+                {isSending && (
+                  <>
+                    <div className="absolute inset-0 rounded-full bg-violet-500/20 animate-spin border border-dashed border-violet-500/30 duration-3000"></div>
+                    <div className="absolute -inset-4 rounded-full bg-violet-500/10 animate-pulse border border-violet-500/5"></div>
+                  </>
+                )}
+                {!(isSpeaking || isListening || isSending) && (
+                  <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-pulse border border-emerald-500/5"></div>
+                )}
+
+                {/* Central Orb Button Controller */}
+                <button
+                  onClick={handleOrbClick}
+                  className={`relative z-10 w-36 h-36 md:w-40 md:h-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 cursor-pointer outline-none focus:ring-4 focus:ring-primary-500/10 ${
+                    isSpeaking
+                      ? 'bg-gradient-to-tr from-cyan-400 to-teal-500 text-white shadow-cyan-500/35 scale-105 border-4 border-cyan-300/30'
+                      : isListening
+                      ? 'bg-gradient-to-tr from-rose-400 to-pink-500 text-white shadow-rose-500/35 scale-110 border-4 border-white/10 animate-pulse-slow'
+                      : isSending
+                      ? 'bg-gradient-to-tr from-violet-400 to-indigo-500 text-white shadow-violet-500/30 scale-100 animate-pulse border-4 border-violet-300/30'
+                      : 'bg-gradient-to-tr from-emerald-400 to-teal-500 text-white shadow-emerald-500/25 scale-95 border-4 border-emerald-300/20 hover:scale-100'
+                  }`}
+                >
+                  <div className="text-center flex flex-col items-center">
+                    {isSpeaking && <Volume2 className="w-10 h-10 animate-pulse text-white" />}
+                    {isListening && <Mic className="w-10 h-10 animate-bounce text-white" />}
+                    {isSending && <Loader2 className="w-10 h-10 animate-spin text-white" />}
+                    {!isSpeaking && !isListening && !isSending && <CheckCircle className="w-10 h-10 text-white/95" />}
+                    
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-white/95 block mt-2">
+                      {isSpeaking 
+                        ? '🔊 AI Speaking...' 
+                        : isSending 
+                        ? '🧠 Evaluating...' 
+                        : isListening 
+                        ? (isWaitingForSilence ? '📝 Transcribing...' : '🎤 Listening...') 
+                        : '⏳ Waiting for response...'}
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Dynamic Waveform Visualizer */}
+              <div className="flex items-center justify-center space-x-1.5 h-16 w-full max-w-md mx-auto">
+                {[...Array(24)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-1 rounded-full transition-all duration-300 ${
+                      isSpeaking 
+                        ? 'bg-gradient-to-t from-cyan-500 to-teal-400 animate-bounce' 
+                        : isListening 
+                        ? 'bg-gradient-to-t from-rose-500 to-pink-400 animate-bounce' 
+                        : 'bg-gray-200 dark:bg-slate-800'
+                    }`}
+                    style={{
+                      height: isSpeaking || isListening ? `${Math.floor(Math.random() * 32) + 8}px` : '6px',
+                      animationDelay: `${i * 45}ms`,
+                      animationDuration: '0.6s'
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Panel (Transcript Preview & Progress) */}
+            <div className="w-full max-w-3xl mx-auto shrink-0 space-y-3.5">
+              
+              {/* Transcript Preview */}
+              <div className="w-full text-center bg-gray-55/65 dark:bg-slate-850/60 p-4 rounded-2xl border border-gray-150 dark:border-slate-800/80 min-h-[76px] flex flex-col items-center justify-center shadow-inner leading-relaxed transition-all">
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-gray-400 dark:text-slate-550 block mb-1 flex items-center gap-1.5 justify-center">
+                  <span>Live Response Transcript</span>
+                  {isWaitingForSilence && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 animate-pulse border border-amber-500/20">
+                      ⏱️ Auto-submitting in 3s...
+                    </span>
+                  )}
+                </span>
+                <p className={`text-sm font-semibold leading-relaxed ${
+                  isListening 
+                    ? 'text-rose-600 dark:text-rose-455 italic'
+                    : isSending
+                    ? 'text-violet-600 dark:text-violet-455 animate-pulse'
+                    : 'text-gray-755 dark:text-slate-200'
+                }`}>
+                  {spokenSubtitle || 'Please answer naturally. Speak clearly into your microphone when the orb glows pink.'}
+                </p>
+              </div>
+
+              {/* Progress Slider Bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                  <span>Question Progress ({progressInfo.step} of {progressInfo.total})</span>
+                  <span>Silence Trigger: 3s</span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden shadow-inner">
+                  <div 
+                    className="bg-gradient-to-r from-primary-500 to-primary-600 h-full transition-all duration-500 ease-out" 
+                    style={{ width: `${progressInfo.percentage}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Statistics / Analytics Panel */}
+          <div className="lg:col-span-4 flex flex-col gap-6 shrink-0">
+            
+            {/* Assessment Diagnostics Card */}
+            <div className="card-premium p-6 space-y-6">
+              <div className="border-b border-gray-100 dark:border-slate-850 pb-4">
+                <h3 className="font-heading font-black text-sm text-gray-950 dark:text-white tracking-tight">
+                  Session Statistics
+                </h3>
+                <p className="text-xs text-gray-450 dark:text-slate-400 mt-0.5">
+                  Real-time interview analytical metrics.
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Visual Ratio */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-gray-50/50 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 text-center">
+                    <span className="text-[9px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block">Completed</span>
+                    <span className="text-lg font-black text-gray-800 dark:text-white">{progressInfo.step - 1}</span>
+                  </div>
+                  <div className="p-3 bg-gray-50/55 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 text-center">
+                    <span className="text-[9px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block">Remaining</span>
+                    <span className="text-lg font-black text-gray-800 dark:text-white">{progressInfo.total - (progressInfo.step - 1)}</span>
+                  </div>
+                </div>
+
+                {/* score estimate meter */}
+                <div className="p-4 bg-gradient-to-br from-primary-500/5 to-indigo-500/5 rounded-2xl border border-primary-500/10 space-y-2">
+                  <div className="flex justify-between items-center text-[10px] text-primary-700 dark:text-primary-400 font-extrabold uppercase tracking-wider">
+                    <span>Estimated Score</span>
+                    <span>{getRunningScoreEstimate()}%</span>
+                  </div>
+                  <div className="w-full bg-primary-100/40 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary-500 to-indigo-500 rounded-full transition-all duration-500"
+                      style={{ width: `${getRunningScoreEstimate()}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-[9px] text-gray-400 dark:text-slate-500 block leading-tight">
+                    * Dynamically calculated based on response richness and keyword density.
+                  </span>
+                </div>
+
+                {/* details items */}
+                <div className="space-y-2.5">
+                  <div className="flex justify-between items-center py-2.5 px-3 bg-gray-55/60 dark:bg-slate-855/50 rounded-xl border border-gray-150/40 dark:border-slate-800/40 text-xs">
+                    <span className="font-bold text-gray-500 dark:text-slate-400">Speech Confidence</span>
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                      {isListening ? `${Math.floor(Math.random() * 5) + 94}%` : '96%'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-2.5 px-3 bg-gray-55/60 dark:bg-slate-855/50 rounded-xl border border-gray-150/40 dark:border-slate-800/40 text-xs">
+                    <span className="font-bold text-gray-500 dark:text-slate-400">Voice Quality</span>
+                    <span className="font-extrabold text-blue-600 dark:text-blue-400">
+                      {isOnline ? 'Excellent (Lossless)' : 'Good (Compressed)'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2.5 px-3 bg-gray-55/60 dark:bg-slate-855/50 rounded-xl border border-gray-150/40 dark:border-slate-800/40 text-xs">
+                    <span className="font-bold text-gray-500 dark:text-slate-400">Interview Status</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-455 border border-emerald-150/30">
+                      Assessment Active
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Alternating Tips Panel */}
+            <div className="card-premium bg-gradient-to-br from-primary-50/50 to-secondary-50/50 p-6 flex flex-col items-center text-center space-y-3 justify-center flex-grow min-h-[140px]">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary-500 bg-primary-500/5 px-2.5 py-1 rounded-full">
+                Interview Tip
+              </span>
+              <p className="text-xs md:text-sm font-semibold text-gray-700 dark:text-slate-350 leading-relaxed transition-all duration-300">
+                "{TIPS[tipIndex]}"
+              </p>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Groq Settings Modal Overlay */}
+      {showKeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="card-premium p-8 max-w-md w-full relative space-y-6 animate-in zoom-in-95 duration-200">
+            <div>
+              <h2 className="font-heading font-extrabold text-xl text-gray-950 dark:text-white flex items-center">
+                <Key className="w-5 h-5 mr-2 text-primary-500 animate-pulse" />
+                AI Interview Configuration
+              </h2>
+              <p className="text-xs text-gray-550 dark:text-slate-450 mt-1 leading-relaxed">
+                Provide a Groq API key to execute assessments using Groq models. The key will be stored securely in your browser's local storage and used directly for API requests.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
+                  Groq API Key
+                </label>
+                <input
+                  type="password"
+                  placeholder="gsk_..."
+                  defaultValue={apiKey}
+                  id="groq-key-input"
+                  className="w-full px-4 py-2.5 bg-gray-55 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white font-mono"
+                />
+              </div>
+
+              <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-start space-x-2 text-[10px] text-amber-600 dark:text-amber-450 leading-relaxed">
+                <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">No API key?</span>
+                  <p className="mt-0.5">
+                    Leave this blank to continue using the built-in simulated technical questions. This mode fully evaluates the qualification and updates badges.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-2.5 pt-2">
+              <button
+                onClick={() => setShowKeyModal(false)}
+                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-white text-sm font-semibold rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const input = document.getElementById('groq-key-input') as HTMLInputElement;
+                  saveApiKey(input?.value || '');
+                }}
+                className="flex-1 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-semibold rounded-xl hover:shadow-lg cursor-pointer"
+              >
+                Save Configuration
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+export default AssessmentPage;

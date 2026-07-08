@@ -220,7 +220,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Call To Action */}
-      <section className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-3xl max-w-7xl mx-auto mx-4 md:mx-8 px-8 py-16 text-center relative overflow-hidden shadow-xl mb-24">
+      <section className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-3xl max-w-7xl mx-4 sm:mx-6 lg:mx-auto px-8 py-16 text-center relative overflow-hidden shadow-xl mb-24">
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-2xl -z-1"></div>
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-black/10 rounded-full blur-2xl -z-1"></div>
 

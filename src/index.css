@@ -1,22 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-heading: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Inter', system-ui, -apple-system, sans-serif;
   
-  --color-primary-50: hsl(262, 80%, 96%);
-  --color-primary-100: hsl(262, 80%, 92%);
-  --color-primary-500: hsl(262, 83%, 58%);
-  --color-primary-600: hsl(262, 83%, 50%);
-  --color-primary-700: hsl(262, 83%, 40%);
+  /* Primary: #2563EB */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #2563eb;
+  --color-primary-600: #1d4ed8;
+  --color-primary-700: #1e40af;
   
-  --color-secondary-500: hsl(199, 89%, 48%);
-  --color-secondary-600: hsl(199, 89%, 40%);
+  /* Secondary: #3B82F6 */
+  --color-secondary-500: #3b82f6;
+  --color-secondary-600: #2563eb;
   
-  --color-accent-500: hsl(330, 81%, 60%);
+  /* Accent: #0EA5E9 */
+  --color-accent-500: #0ea5e9;
+
+  /* Status Colors */
+  --color-success-500: #22c55e;
+  --color-warning-500: #f59e0b;
+  --color-error-500: #ef4444;
+
+  /* Backgrounds & Surfaces */
+  --color-bg-light: #f8fafc;
+  --color-surface-light: #ffffff;
+  --color-border-light: #e2e8f0;
+  
+  /* Text */
+  --color-text-primary: #1e293b;
+  --color-text-secondary: #64748b;
   
   --animate-float: float 6s ease-in-out infinite;
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -36,22 +53,97 @@
     min-height: 100%;
     font-family: var(--font-sans);
     scroll-behavior: smooth;
+    background-color: var(--color-bg-light);
+    color: var(--color-text-primary);
   }
 }
 
-/* Glassmorphism utilities */
-.glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+/* Premium Components */
+.card-premium {
+  background-color: var(--color-surface-light);
+  border-radius: 18px;
+  border: 1px solid var(--color-border-light);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
 }
 
-.dark .glass {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+.card-premium:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+.dark .card-premium {
+  background-color: #0f172a;
+  border-color: #1e293b;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+.dark .card-premium:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+/* Premium Buttons */
+.btn-primary {
+  background-color: var(--color-primary-500);
+  color: white;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
+  transition: all 0.2s ease;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-600);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.23);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--color-surface-light);
+  color: var(--color-primary-500);
+  border: 1px solid var(--color-primary-500);
+  border-radius: 14px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-primary-50);
+}
+
+.dark .btn-secondary {
+  background-color: transparent;
+  color: var(--color-primary-400);
+  border-color: var(--color-primary-500);
+}
+
+.dark .btn-secondary:hover {
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.btn-danger {
+  background-color: transparent;
+  color: var(--color-error-500);
+  border: 1px solid var(--color-error-500);
+  border-radius: 14px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+}
+
+.btn-danger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 /* Custom scrollbars */

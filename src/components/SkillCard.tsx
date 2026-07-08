@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import type { Profile } from '../types';
 import { ArrowRight, BookOpen, GraduationCap, User, MapPin, ShieldCheck } from 'lucide-react';
 
@@ -11,26 +12,30 @@ interface SkillCardProps {
 
 export const SkillCard: React.FC<SkillCardProps> = ({ profile, onSelectSwap, isCurrentUser, verifiedSkills = [] }) => {
   return (
-    <div className="relative flex flex-col justify-between bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 hover:border-primary-500/20 dark:hover:border-primary-500/30 transition-all duration-300">
+    <div className="card-premium relative flex flex-col justify-between p-6 hover:shadow-xl hover:-translate-y-1 hover:border-primary-500/20 dark:hover:border-primary-500/30 transition-all duration-300">
       
       {/* Top Section: User Info */}
       <div>
         <div className="flex items-start space-x-4 mb-4">
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.full_name || 'User'}
-              className="w-12 h-12 rounded-full border-2 border-primary-100 dark:border-slate-800 object-cover bg-gray-50"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-slate-800 text-primary-500 flex items-center justify-center">
-              <User className="w-6 h-6" />
-            </div>
-          )}
+          <Link to={`/profile/${profile.id}`} className="shrink-0 hover:opacity-85 transition-opacity">
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={profile.full_name || 'User'}
+                className="w-12 h-12 rounded-full border-2 border-primary-100 dark:border-slate-800 object-cover bg-gray-50"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-slate-800 text-primary-500 flex items-center justify-center">
+                <User className="w-6 h-6" />
+              </div>
+            )}
+          </Link>
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">
-              {profile.full_name || 'Anonymous User'}
-            </h3>
+            <Link to={`/profile/${profile.id}`} className="hover:text-primary-500 transition-colors">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                {profile.full_name || 'Anonymous User'}
+              </h3>
+            </Link>
             <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
               @{profile.username || 'user'}
             </p>
@@ -134,7 +139,7 @@ export const SkillCard: React.FC<SkillCardProps> = ({ profile, onSelectSwap, isC
         <button
           onClick={() => onSelectSwap(profile)}
           disabled={!profile.skills_teach?.length || !profile.skills_learn?.length}
-          className="flex items-center justify-center space-x-2 w-full mt-2 py-2.5 px-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold text-sm rounded-xl hover:shadow-lg hover:shadow-primary-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
+          className="btn-primary flex items-center justify-center space-x-2 w-full mt-2 py-2.5 text-sm hover:shadow-lg hover:shadow-primary-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span>Request Swap</span>
           <ArrowRight className="w-4 h-4" />

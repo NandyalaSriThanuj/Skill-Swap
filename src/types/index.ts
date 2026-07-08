@@ -8,6 +8,15 @@ export interface Profile {
   availability: 'available' | 'busy' | 'offline';
   skills_teach: string[]; // List of skill names/IDs they can teach
   skills_learn: string[]; // List of skill names/IDs they want to learn
+  mentor_verification_status?: 'pending' | 'verified' | 'rejected';
+  interview_status?: string;
+  final_score?: number;
+  skill_verified?: string;
+  mentor_badge?: string;
+  assessment_date?: string;
+  certificate_status?: string;
+  last_assessment_timestamp?: string;
+  certificates?: any[];
   updated_at?: string;
 }
 

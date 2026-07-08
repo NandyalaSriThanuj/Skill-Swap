@@ -18,6 +18,15 @@ create table public.profiles (
   availability text default 'available' check (availability in ('available', 'busy', 'offline')),
   skills_teach text[] default '{}',
   skills_learn text[] default '{}',
+  mentor_verification_status text default 'pending' check (mentor_verification_status in ('pending', 'verified', 'rejected')),
+  interview_status text default 'pending',
+  final_score integer,
+  skill_verified text,
+  mentor_badge text,
+  assessment_date timestamp with time zone,
+  certificate_status text default 'not_issued',
+  last_assessment_timestamp timestamp with time zone,
+  certificates jsonb default '[]'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

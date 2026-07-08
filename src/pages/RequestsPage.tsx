@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import type { Profile, SwapRequest, Message, LearningSession } from '../types';
@@ -414,14 +414,18 @@ export const RequestsPage: React.FC = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-slate-800">
                     {/* User profile */}
                     <div className="flex items-center space-x-3.5">
-                      <img
-                        src={targetProfile.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${targetProfile.username}`}
-                        alt={targetProfile.full_name || 'User'}
-                        className="w-11 h-11 rounded-full bg-gray-50 border border-gray-100"
-                      />
+                      <Link to={`/profile/${targetProfile.id}`} className="shrink-0 hover:opacity-85 transition-opacity">
+                        <img
+                          src={targetProfile.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${targetProfile.username}`}
+                          alt={targetProfile.full_name || 'User'}
+                          className="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 object-cover"
+                        />
+                      </Link>
                       <div>
-                        <h4 className="font-extrabold text-gray-900 dark:text-white text-base">{targetProfile.full_name}</h4>
-                        <p className="text-xs text-gray-450 dark:text-slate-450">@{targetProfile.username}</p>
+                        <Link to={`/profile/${targetProfile.id}`} className="hover:text-primary-500 transition-colors">
+                          <h4 className="font-extrabold text-gray-900 dark:text-white text-base">{targetProfile.full_name}</h4>
+                        </Link>
+                        <p className="text-xs text-gray-450 dark:text-slate-455">@{targetProfile.username}</p>
                       </div>
                     </div>
                     {/* Status Badge */}

@@ -23,7 +23,8 @@ import {
   ShieldCheck,
   Trophy,
   Star,
-  Search
+  Search,
+  Bot
 } from 'lucide-react';
 
 const SKILL_MAP: Record<string, { category: string; filterGroup: string; difficulty: 'Beginner' | 'Intermediate' | 'Expert'; estTime: string; isTechnical: boolean }> = {
@@ -189,6 +190,35 @@ const getSkillDetails = (skillName: string) => {
   };
 };
 
+const getBadgeStyle = (badgeName: string) => {
+  switch (badgeName) {
+    case 'Expert Mentor':
+      return {
+        bg: 'bg-amber-500/5',
+        border: 'border-amber-500/30',
+        text: 'text-amber-600 dark:text-amber-400',
+      };
+    case 'Verified Mentor':
+      return {
+        bg: 'bg-emerald-500/5',
+        border: 'border-emerald-500/30',
+        text: 'text-emerald-600 dark:text-emerald-400',
+      };
+    case 'Community Mentor':
+      return {
+        bg: 'bg-blue-500/5',
+        border: 'border-blue-500/30',
+        text: 'text-blue-600 dark:text-blue-400',
+      };
+    default:
+      return {
+        bg: 'bg-rose-500/5',
+        border: 'border-rose-500/30',
+        text: 'text-rose-600 dark:text-rose-455',
+      };
+  }
+};
+
 export const DashboardPage: React.FC = () => {
   const { profile, isMock } = useAuth();
   const navigate = useNavigate();
@@ -199,7 +229,8 @@ export const DashboardPage: React.FC = () => {
   const [qualLoading, setQualLoading] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedStatus, setSelectedStatus] = useState('All');
 
   useEffect(() => {
     const loadMatchesAndRequests = async () => {
@@ -306,17 +337,9 @@ export const DashboardPage: React.FC = () => {
 
   if (!profile) return null;
 
-  const handleStartAssessment = async (skillName: string) => {
+  const handleStartAssessment = (skillName: string) => {
     if (!profile) return;
-    setQualLoading(true);
-    try {
-      const session = await qualificationService.createSession(profile.id, skillName);
-      navigate(`/assessment/${session.id}`);
-    } catch (err) {
-      console.error('Error starting qualification assessment:', err);
-    } finally {
-      setQualLoading(false);
-    }
+    navigate(`/assessment-setup/${encodeURIComponent(skillName)}`);
   };
 
 
@@ -455,7 +478,7 @@ export const DashboardPage: React.FC = () => {
           ? Math.round(passedSessions.reduce((sum, s) => sum + (s.score || 0), 0) / passedSessions.length)
           : 0;
 
-        // Perform dynamic filtering based on search query and active filter tab
+        // Perform dynamic filtering based on search query and active filter tabs
         const filteredSkills = profile.skills_teach.filter(skillName => {
           const details = getSkillDetails(skillName);
           const session = qualSessions.find(
@@ -471,32 +494,34 @@ export const DashboardPage: React.FC = () => {
             if (!matchesName && !matchesCategory) return false;
           }
 
-          // 2. Active Filter chip filter
-          if (activeFilter === 'All') return true;
-          
-          // Status filters
-          if (activeFilter === 'Completed' || activeFilter === 'Verified') {
-            return status === 'passed';
-          }
-          if (activeFilter === 'Pending') {
-            return status === 'in_progress' || status === 'pending';
-          }
-          if (activeFilter === 'Failed') {
-            return status === 'failed';
+          // 2. Category Dropdown Filter
+          if (selectedCategory !== 'All') {
+            if (selectedCategory === 'Programming') {
+              const isProg = ['programming languages', 'web development', 'mobile development', 'computer science'].includes(details.filterGroup.toLowerCase()) ||
+                             ['programming languages', 'web development', 'mobile development', 'computer science'].includes(details.category.toLowerCase());
+              if (!isProg) return false;
+            } else {
+              if (details.filterGroup.toLowerCase() !== selectedCategory.toLowerCase()) return false;
+            }
           }
 
-          // Category group matching (handle mapping Programming group to multiple categories)
-          if (activeFilter === 'Programming') {
-            return ['programming languages', 'web development', 'mobile development', 'computer science'].includes(details.filterGroup.toLowerCase()) ||
-                   ['programming languages', 'web development', 'mobile development', 'computer science'].includes(details.category.toLowerCase());
+          // 3. Status Dropdown Filter
+          if (selectedStatus !== 'All') {
+            if (selectedStatus === 'Certified') {
+              if (status !== 'passed') return false;
+            } else if (selectedStatus === 'Pending') {
+              if (status !== 'in_progress' && status !== 'pending') return false;
+            } else if (selectedStatus === 'Failed') {
+              if (status !== 'failed') return false;
+            }
           }
 
-          return details.filterGroup.toLowerCase() === activeFilter.toLowerCase();
+          return true;
         });
 
         return (
-          <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-sm space-y-6 transition-colors">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm space-y-4 transition-colors">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="space-y-1">
                 <h2 className="font-heading font-extrabold text-2xl text-gray-905 dark:text-white flex items-center">
                   <Award className="w-6 h-6 mr-2 text-primary-500 animate-pulse-slow" />
@@ -508,46 +533,78 @@ export const DashboardPage: React.FC = () => {
               </div>
               
               {profile.skills_teach.length > 0 && (
-                <div className="relative w-full md:w-72">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-gray-400" />
-                  </span>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search skill or category..."
-                    className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-805/45 border border-gray-200 dark:border-slate-750 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white transition-all"
-                  />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
+                  {/* Search Input */}
+                  <div className="relative w-full sm:w-60">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-gray-400" />
+                    </span>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search skill..."
+                      className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-805/45 border border-gray-200 dark:border-slate-750 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white transition-all"
+                    />
+                  </div>
+
+                  {/* Category Filter Dropdown */}
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="px-3 py-2 bg-gray-50 dark:bg-slate-805/45 border border-gray-200 dark:border-slate-750 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white transition-all cursor-pointer font-bold text-gray-700 dark:text-slate-350"
+                  >
+                    <option value="All">All Categories</option>
+                    <option value="Programming">Programming</option>
+                    <option value="AI">Artificial Intelligence</option>
+                    <option value="Cloud">Cloud & DevOps</option>
+                    <option value="Database">Databases</option>
+                    <option value="Design">Design</option>
+                    <option value="Business">Business</option>
+                    <option value="Creative">Creative Skills</option>
+                    <option value="Lifestyle">Lifestyle</option>
+                  </select>
+
+                  {/* Status Filter Dropdown */}
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    className="px-3 py-2 bg-gray-50 dark:bg-slate-805/45 border border-gray-200 dark:border-slate-750 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white transition-all cursor-pointer font-bold text-gray-700 dark:text-slate-355"
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Certified">Certified</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Failed">Failed</option>
+                  </select>
                 </div>
               )}
             </div>
 
             {/* Dashboard Stats */}
             {profile.skills_teach.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 p-4 bg-gray-50/50 dark:bg-slate-800/20 rounded-2xl border border-gray-100 dark:border-slate-800/80">
-                <div className="text-center p-2.5 space-y-1">
-                  <div className="text-xl font-black text-gray-900 dark:text-white">{profile.skills_teach.length}</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 p-3 bg-gray-50/50 dark:bg-slate-800/20 rounded-xl border border-gray-100 dark:border-slate-800/80">
+                <div className="text-center p-1.5 space-y-0.5">
+                  <div className="text-lg font-black text-gray-900 dark:text-white">{profile.skills_teach.length}</div>
                   <div className="text-[9px] text-gray-450 dark:text-slate-500 font-bold uppercase tracking-wider">Total Skills</div>
                 </div>
-                <div className="text-center p-2.5 border-l border-gray-200/60 dark:border-slate-800 space-y-1">
-                  <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">{verifiedCount}</div>
+                <div className="text-center p-1.5 border-l border-gray-200/60 dark:border-slate-800 space-y-0.5">
+                  <div className="text-lg font-black text-emerald-600 dark:text-emerald-400">{verifiedCount}</div>
                   <div className="text-[9px] text-gray-450 dark:text-slate-500 font-bold uppercase tracking-wider">Verified Skills</div>
                 </div>
-                <div className="text-center p-2.5 border-l border-gray-200/60 dark:border-slate-800 space-y-1">
-                  <div className="text-xl font-black text-blue-500 dark:text-blue-400">{pendingCount}</div>
+                <div className="text-center p-1.5 border-l border-gray-200/60 dark:border-slate-800 space-y-0.5">
+                  <div className="text-lg font-black text-blue-500 dark:text-blue-400">{pendingCount}</div>
                   <div className="text-[9px] text-gray-450 dark:text-slate-500 font-bold uppercase tracking-wider">Pending</div>
                 </div>
-                <div className="text-center p-2.5 border-l border-gray-200/60 dark:border-slate-800 space-y-1">
-                  <div className="text-xl font-black text-red-500 dark:text-red-400">{failedCount}</div>
+                <div className="text-center p-1.5 border-l border-gray-200/60 dark:border-slate-800 space-y-0.5">
+                  <div className="text-lg font-black text-red-500 dark:text-red-400">{failedCount}</div>
                   <div className="text-[9px] text-gray-450 dark:text-slate-500 font-bold uppercase tracking-wider">Failed</div>
                 </div>
-                <div className="text-center p-2.5 border-l border-gray-200/60 dark:border-slate-800 space-y-1">
-                  <div className="text-xl font-black text-primary-500 dark:text-primary-400">{verifiedCount}</div>
+                <div className="text-center p-1.5 border-l border-gray-200/60 dark:border-slate-800 space-y-0.5">
+                  <div className="text-lg font-black text-primary-500 dark:text-primary-400">{verifiedCount}</div>
                   <div className="text-[9px] text-gray-450 dark:text-slate-500 font-bold uppercase tracking-wider">Certificates</div>
                 </div>
-                <div className="text-center p-2.5 border-l border-gray-200/60 dark:border-slate-800 space-y-1">
-                  <div className="text-xl font-black text-purple-600 dark:text-purple-400">
+                <div className="text-center p-1.5 border-l border-gray-200/60 dark:border-slate-800 space-y-0.5">
+                  <div className="text-lg font-black text-purple-600 dark:text-purple-400">
                     {avgScore > 0 ? `${avgScore}%` : '0%'}
                   </div>
                   <div className="text-[9px] text-gray-450 dark:text-slate-500 font-bold uppercase tracking-wider">Avg Score</div>
@@ -555,41 +612,7 @@ export const DashboardPage: React.FC = () => {
               </div>
             )}
 
-            {/* Filter Tabs */}
-            {profile.skills_teach.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pb-1">
-                {[
-                  'All',
-                  'Programming',
-                  'AI',
-                  'Cloud',
-                  'Database',
-                  'Design',
-                  'Business',
-                  'Creative',
-                  'Lifestyle',
-                  'Completed',
-                  'Pending',
-                  'Verified',
-                  'Failed'
-                ].map(filter => {
-                  const isActive = activeFilter === filter;
-                  return (
-                    <button
-                      key={filter}
-                      onClick={() => setActiveFilter(filter)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-150 cursor-pointer border ${
-                        isActive
-                          ? 'bg-primary-500 text-white border-primary-500 shadow-sm shadow-primary-500/10'
-                          : 'bg-gray-50 hover:bg-gray-100 text-gray-600 border-gray-150 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-750'
-                      }`}
-                    >
-                      {filter}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+
 
             {/* List of dynamic teaching skills */}
             {(() => {
@@ -648,15 +671,17 @@ export const DashboardPage: React.FC = () => {
                     return (
                       <div
                         key={skillName}
-                        className="p-5 bg-gray-50/30 dark:bg-slate-850/20 border border-gray-100 dark:border-slate-850 rounded-2xl hover:shadow-md transition-all flex flex-col justify-between group"
+                        className="card-premium relative p-4 flex flex-col justify-between group hover:-translate-y-0.5 hover:shadow-lg hover:border-primary-500/20 dark:hover:border-primary-500/30 transition-all duration-300 min-h-[170px]"
                       >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-500/5 to-secondary-500/5 rounded-bl-full -z-1 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                        
                         <div>
-                          <div className="flex items-start justify-between gap-2 mb-1.5">
-                            <div className="min-w-0">
-                              <h4 className="font-bold text-sm text-gray-905 dark:text-white truncate">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-lg text-gray-900 dark:text-white truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                                 {skillName}
                               </h4>
-                              <p className="text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider">
+                              <p className="text-[10px] text-primary-500/80 dark:text-primary-400/80 font-bold uppercase tracking-wider mt-0.5">
                                 {details.category}
                               </p>
                             </div>
@@ -666,69 +691,63 @@ export const DashboardPage: React.FC = () => {
                               const badgeName = session?.badge || 'Verified Mentor';
                               if (badgeName === 'Expert Mentor') {
                                 return (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-[9px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-200/50 shrink-0">
-                                    <Trophy className="w-3 h-3 mr-0.5 text-amber-500" />
-                                    Expert
-                                  </span>
+                                  <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 shadow-sm border border-amber-200/50 dark:border-amber-900/50 shrink-0">
+                                    <Trophy className="w-5 h-5" />
+                                  </div>
                                 );
                               } else if (badgeName === 'Community Mentor') {
                                 return (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-[9px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200/50 shrink-0">
-                                    <Star className="w-3 h-3 mr-0.5 text-blue-500" />
-                                    Community
-                                  </span>
+                                  <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 shadow-sm border border-blue-200/50 dark:border-blue-900/50 shrink-0">
+                                    <Star className="w-5 h-5" />
+                                  </div>
                                 );
                               } else {
                                 return (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-[9px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100/50 shrink-0">
-                                    <ShieldCheck className="w-3 h-3 mr-0.5 text-emerald-555" />
-                                    Verified
-                                  </span>
+                                  <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-200/50 dark:border-emerald-900/50 shrink-0">
+                                    <ShieldCheck className="w-5 h-5" />
+                                  </div>
                                 );
                               }
                             })()}
                           </div>
 
-                          <div className="flex items-center space-x-1.5 mb-2.5">
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border ${diffBadgeColor}`}>
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold border ${diffBadgeColor}`}>
                               {difficulty}
                             </span>
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-100/80 text-gray-550 dark:bg-slate-800 dark:text-slate-400 border border-gray-150/40">
-                              <Clock className="w-2.5 h-2.5 mr-0.5 text-gray-400" />
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100/80 text-gray-600 dark:bg-slate-800 dark:text-slate-300 border border-gray-200/50 dark:border-slate-700/50">
+                              <Clock className="w-3 h-3 mr-1 opacity-70" />
                               {estTime}
                             </span>
-                          </div>
-                          
-                          <div className="flex items-center space-x-1 mb-3">
-                            <span className="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase">Status:</span>
+                            
                             {status === 'passed' && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-750 dark:bg-emerald-950/15 dark:text-emerald-400">
+                              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/50">
                                 Certified
                               </span>
                             )}
                             {status === 'failed' && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-red-50 text-red-750 dark:bg-red-950/15 dark:text-red-400">
+                              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 border border-red-200/50 dark:border-red-900/50">
                                 Failed
                               </span>
                             )}
                             {status === 'in_progress' && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-750 dark:bg-blue-950/15 dark:text-blue-400 animate-pulse">
+                              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 border border-blue-200/50 dark:border-blue-900/50 animate-pulse">
                                 In Progress
                               </span>
                             )}
                             {status === 'pending' && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-750 dark:bg-amber-950/15 dark:text-amber-400">
+                              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/50">
                                 Ready
                               </span>
                             )}
                             {status === 'not_started' && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400">
+                              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400 border border-gray-200/50 dark:border-slate-700/50">
                                 Not Started
                               </span>
                             )}
                           </div>
                           
-                          <p className="text-[11px] text-gray-400 dark:text-slate-500 mb-4 leading-normal min-h-[32px]">
+                          <p className="text-xs text-gray-500 dark:text-slate-400 mb-4 leading-relaxed line-clamp-2">
                             {status === 'passed'
                               ? `Qualified as Verified Mentor (${session?.score || 0}%). View certificate details and feedback.`
                               : status === 'failed'
@@ -740,44 +759,46 @@ export const DashboardPage: React.FC = () => {
                         </div>
      
                         {/* Action buttons */}
-                        {status === 'passed' ? (
-                          <button
-                            onClick={() => navigate(`/assessment/${session?.id}`)}
-                            className="w-full py-2 bg-emerald-500/5 hover:bg-emerald-500/10 dark:bg-emerald-500/3 border border-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-center text-xs font-bold rounded-xl cursor-pointer flex items-center justify-center space-x-1"
-                          >
-                            <ShieldCheck className="w-4 h-4 text-emerald-550" />
-                            <span>View Certificate</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleStartAssessment(skillName)}
-                            disabled={qualLoading}
-                            className={`w-full py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
-                              status === 'failed'
-                                ? 'bg-red-500/5 hover:bg-red-500/10 text-red-650 dark:text-red-400 border border-red-500/10'
-                                : status === 'in_progress' || status === 'pending'
-                                ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-sm shadow-blue-500/10'
-                                : 'bg-primary-500 hover:bg-primary-600 text-white shadow-sm shadow-primary-500/10'
-                            }`}
-                          >
-                            {status === 'failed' ? (
-                              <>
-                                <RotateCcw className="w-3.5 h-3.5" />
-                                <span>Retry Assessment</span>
-                              </>
-                            ) : status === 'in_progress' || status === 'pending' ? (
-                              <>
-                                <Play className="w-3.5 h-3.5 fill-current animate-pulse" />
-                                <span>Resume Assessment</span>
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="w-3.5 h-3.5" />
-                                <span>Start Assessment</span>
-                              </>
-                            )}
-                          </button>
-                        )}
+                        <div className="pt-4 mt-auto border-t border-gray-100 dark:border-slate-800">
+                          {status === 'passed' ? (
+                            <button
+                              onClick={() => navigate(`/assessment/${session?.id}`)}
+                              className="w-full py-2.5 bg-transparent hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-center text-sm font-bold rounded-xl cursor-pointer flex items-center justify-center space-x-2 transition-colors"
+                            >
+                              <ShieldCheck className="w-4 h-4" />
+                              <span>View Certificate</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleStartAssessment(skillName)}
+                              disabled={qualLoading}
+                              className={`w-full py-2.5 text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 ${
+                                status === 'failed'
+                                  ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20'
+                                  : status === 'in_progress' || status === 'pending'
+                                  ? 'btn-primary shadow-blue-500/25'
+                                  : 'btn-primary shadow-primary-500/25'
+                              }`}
+                            >
+                              {status === 'failed' ? (
+                                <>
+                                  <RotateCcw className="w-4 h-4" />
+                                  <span>Retry Assessment</span>
+                                </>
+                              ) : status === 'in_progress' || status === 'pending' ? (
+                                <>
+                                  <Play className="w-4 h-4 fill-current animate-pulse" />
+                                  <span>Resume Assessment</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-4 h-4" />
+                                  <span>Start Assessment</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -823,6 +844,8 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
+
+
       {/* Main Dashboard Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -855,15 +878,19 @@ export const DashboardPage: React.FC = () => {
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-3">
-                          <img
-                            src={match.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${match.username}`}
-                            alt={match.full_name || 'User'}
-                            className="w-10 h-10 rounded-full border border-gray-100 dark:border-slate-850"
-                          />
+                          <Link to={`/profile/${match.id}`} className="shrink-0 hover:opacity-85 transition-opacity">
+                            <img
+                              src={match.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${match.username}`}
+                              alt={match.full_name || 'User'}
+                              className="w-10 h-10 rounded-full border border-gray-100 dark:border-slate-855 object-cover"
+                            />
+                          </Link>
                           <div>
-                            <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate max-w-[120px]">
-                              {match.full_name}
-                            </h4>
+                            <Link to={`/profile/${match.id}`} className="hover:text-primary-500 transition-colors">
+                              <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate max-w-[120px]">
+                                {match.full_name}
+                              </h4>
+                            </Link>
                             <p className="text-xs text-gray-500 dark:text-slate-400 truncate">@{match.username}</p>
                           </div>
                         </div>

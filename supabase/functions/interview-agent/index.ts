@@ -47,7 +47,7 @@ serve(async (req) => {
       })
     }
 
-    const { skillName, chatHistory, newAnswer, selectedLanguage } = await req.json()
+    const { skillName, chatHistory, newAnswer, selectedLanguage, forceEnd } = await req.json()
 
     const isTechnicalSkill = (nameStr: string): boolean => {
       const name = nameStr.toLowerCase().trim();
@@ -116,6 +116,8 @@ serve(async (req) => {
     const qIndex = userAnswersCount + 1;
     const currentDifficulty = getTargetDifficulty(isTech, qIndex);
 
+    const isComplete = userAnswersCount >= totalQ || forceEnd === true;
+
     // Dynamic prompt mapping categories
     const categoriesPrompt = `
 For the following core skills, follow their designated interview path:
@@ -182,7 +184,7 @@ Before outputting any question, check: Does this question belong to the selected
 
     // Add state-specific instruction to guarantee compliance with the question limit
     let stateInstruction = "";
-    if (userAnswersCount < totalQ) {
+    if (!isComplete) {
       stateInstruction = `The user has answered ${userAnswersCount} questions so far. This is question index ${qIndex} out of ${totalQ}. 
 The current target difficulty level is: ${currentDifficulty}.
 Action: Acknowledge the user's previous answer briefly in ${currentLang} (point out strengths or gently nudge on gaps if weak, but keep it very short), then ask the next question in ${currentLang}.
@@ -321,7 +323,7 @@ Ensure that this JSON block is the very last thing you write, so the application
       reply = completion.choices[0]?.message?.content || '';
 
       // Skip validation if the interview is completed (it outputs the JSON evaluation report)
-      if (userAnswersCount >= totalQ) {
+      if (isComplete) {
         break;
       }
 
