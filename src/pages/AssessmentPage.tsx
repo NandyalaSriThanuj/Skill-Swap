@@ -67,6 +67,34 @@ interface SummaryReportModalProps {
 
 const SummaryReportModal: React.FC<SummaryReportModalProps> = ({ session, duration, onClose }) => {
   const navigate = useNavigate();
+
+  const actualUserMessages = session.chat_history ? session.chat_history.filter((m: any) => m.role === 'user' && !m.is_pre_interview) : [];
+  const answersCount = actualUserMessages.length;
+
+  if (answersCount === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="card-premium max-w-md w-full bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-[28px] shadow-2xl p-8 text-center space-y-6 animate-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle className="w-8 h-8 animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-heading font-black text-xl text-gray-950 dark:text-white">Interview Ended</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Interview ended before any assessment was completed.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold text-sm rounded-xl cursor-pointer shadow-lg shadow-primary-500/10 transition-all"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const badgeName = session.badge || (session.status === 'passed' ? 'Verified Mentor' : 'Not Eligible');
   const badgeStyle = getBadgeStyle(badgeName);
 
@@ -407,24 +435,33 @@ const AssessmentPageInner: React.FC<{ initialSession: QualificationSession }> = 
 
         {/* Global Key Config & Status Indicators */}
         <div className="flex items-center space-x-3 shrink-0">
-          {isSupabaseConfigured ? (
-            <div className="flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle className="w-3.5 h-3.5 text-emerald-550" />
-              <span>Groq AI Active</span>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowKeyModal(true)}
-              className={`flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                apiKey 
-                  ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
-                  : 'bg-amber-500/5 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10'
-              }`}
-            >
-              <Key className="w-3.5 h-3.5" />
-              <span>{apiKey ? 'Groq Key Active' : 'Configure Groq Key'}</span>
-            </button>
-          )}
+          <button
+            onClick={() => setShowKeyModal(true)}
+            className={`flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+              apiKey 
+                ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10' 
+                : isSupabaseConfigured
+                ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10'
+                : 'bg-amber-500/5 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10'
+            }`}
+          >
+            {apiKey ? (
+              <>
+                <Key className="w-3.5 h-3.5 text-emerald-550 animate-pulse" />
+                <span>Custom Groq Key Active</span>
+              </>
+            ) : isSupabaseConfigured ? (
+              <>
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-550" />
+                <span>Groq AI Active (Default)</span>
+              </>
+            ) : (
+              <>
+                <Key className="w-3.5 h-3.5" />
+                <span>Configure Groq Key</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 

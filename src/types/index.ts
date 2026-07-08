@@ -79,7 +79,7 @@ export interface QualificationSession {
   user_id: string;
   skill_name: string;
   status: 'pending' | 'in_progress' | 'passed' | 'failed';
-  chat_history: { role: 'assistant' | 'user' | 'system'; content: string }[];
+  chat_history: { role: 'assistant' | 'user' | 'system'; content: string; is_pre_interview?: boolean }[];
   score?: number;
   feedback?: string;
   created_at: string;

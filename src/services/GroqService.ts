@@ -176,17 +176,16 @@ export class GroqService {
   ): Promise<GroqEvaluationResult> {
     const apiKey = localStorage.getItem('skillswap-groq-api-key');
     if (!apiKey) {
-      throw new Error("GROQ API key is required. Please set it in the setup page.");
+      throw new Error("GROQ API key is required. Please configure it by clicking the settings button in the top right of the page.");
     }
 
-    const updatedHistory = [
-      ...currentHistory,
-      ...(newAnswer.trim() ? [{ role: 'user' as const, content: newAnswer }] : [])
-    ];
+    const hasStarted = currentHistory.some(m => m.role === 'assistant' && !m.is_pre_interview);
+    const isPreInterviewConfirmation = !hasStarted;
 
-    const isTech = this.isTechnicalSkill(skillName);
-    const userAnswersCount = updatedHistory.filter(m => m.role === 'user').length;
+    const actualUserMessages = currentHistory.filter(m => m.role === 'user' && !m.is_pre_interview);
+    const userAnswersCount = actualUserMessages.length;
     const isComplete = userAnswersCount >= totalQuestions || forceEnd;
+    const isTech = this.isTechnicalSkill(skillName);
     const currentLang = isTech ? 'English' : (selectedLanguage || 'English');
     const skillType = isTech ? 'Technical' : 'Non-Technical';
 
@@ -196,8 +195,7 @@ export class GroqService {
       : (qIndex <= 4 ? 'Beginner' : qIndex <= 9 ? 'Intermediate' : 'Advanced');
 
     // Build the Compact Summary locally to avoid sending massive history
-
-    const assistantMessages = updatedHistory.filter(m => m.role === 'assistant');
+    const assistantMessages = currentHistory.filter(m => m.role === 'assistant' && !m.is_pre_interview);
     
     // Extract past topics and scores from history evaluations
     const pastTopics = assistantMessages.slice(0, -1).map((m: any, i) => `Q${i+1}: ${m.content.substring(0, 40)}...`).join(' | ');
@@ -208,7 +206,7 @@ export class GroqService {
     const allWeaknesses = assistantMessages.map((m: any) => m.evaluation?.weakness).filter(Boolean);
     const compactWeaknesses = allWeaknesses.slice(-3).join('. '); // Keep only latest 3 to save tokens
 
-    const lastQuestion = assistantMessages.length > 0 ? assistantMessages[assistantMessages.length - 1].content : '';
+    const lastQuestion = currentHistory.filter(m => m.role === 'assistant').pop()?.content || '';
 
     const baseSystemPrompt = `You are a technical interviewer for ${skillName} (${skillType}).
 Language: ${currentLang}.
@@ -216,7 +214,16 @@ DO NOT repeat these past topics: ${pastTopics || 'None'}
 Candidate Avg Score: ${avgScore}/10. Weaknesses: ${compactWeaknesses || 'None'}`;
 
     let stateInstruction = "";
-    if (!isComplete) {
+    if (isPreInterviewConfirmation) {
+      stateInstruction = `The user has confirmed they are ready to start. The interview has NOT started yet.
+Action: Generate the first actual interview question (Question 1) for the skill ${skillName} in ${currentLang}.
+Do NOT evaluate the user's confirmation message. Simply ask the first question.
+Ensure the question strictly belongs to ${skillName} and is at the Beginner difficulty level.
+You MUST output your response as a raw JSON object EXACTLY matching this structure:
+{
+  "next_question": "<the actual question you want to ask next in ${currentLang}>"
+}`;
+    } else if (!isComplete) {
       stateInstruction = `[STATE] Q: ${qIndex}/${totalQuestions}. Target Difficulty: ${currentDifficulty}.
 Evaluate the candidate's LAST answer. Then ask the NEXT question in ${currentLang}.
 You MUST output your response as a raw JSON object EXACTLY matching this structure:
@@ -356,8 +363,17 @@ You MUST output your response as a raw JSON object EXACTLY matching this structu
       }
     }
 
+    const baseHistory = [
+      ...currentHistory,
+      ...(newAnswer.trim() ? [{ 
+        role: 'user' as const, 
+        content: newAnswer, 
+        is_pre_interview: isPreInterviewConfirmation ? true : undefined 
+      }] : [])
+    ];
+
     if (!isComplete) {
-      updatedHistory.push({ 
+      baseHistory.push({ 
         role: 'assistant', 
         content: cleanedReply,
         evaluation: newEvaluation 
@@ -369,10 +385,7 @@ You MUST output your response as a raw JSON object EXACTLY matching this structu
       finalStatus: finalStatus === 'in_progress' ? undefined : finalStatus,
       finalScore,
       finalFeedback,
-      updatedHistory: [
-        ...updatedHistory,
-        { role: 'assistant' as const, content: cleanedReply }
-      ],
+      updatedHistory: baseHistory,
       technical_score,
       communication_score,
       teaching_score,

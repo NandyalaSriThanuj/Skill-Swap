@@ -149,7 +149,7 @@ export default function InterviewSummaryPage() {
   const confidenceScore = session.report?.detailed_scores?.confidence ?? session.score ?? 0;
   const overallScore = session.score || 0;
 
-  const chatHistory = session.chat_history || [];
+  const chatHistory = (session.chat_history || []).filter((msg: any) => !msg.is_pre_interview);
   // Calculate question-wise mock data if not directly available (group by assistant -> user pair)
   const qaPairs = [];
   let currentQ = null;

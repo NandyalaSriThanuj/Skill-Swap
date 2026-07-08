@@ -29,10 +29,14 @@ const saveMockAssessments = (assessments: any[]) => {
 // Helper to map DB models to unified QualificationSession type
 const mergeSessionAndAssessment = (session: any, assessment: any): QualificationSession => {
   let mappedStatus: QualificationSession['status'] = 'pending';
-  if (assessment) {
+  if (session) {
+    if (session.status === 'completed') {
+      mappedStatus = assessment?.badge === 'Not Eligible' ? 'failed' : 'passed';
+    } else {
+      mappedStatus = session.status === 'pending' ? 'pending' : 'in_progress';
+    }
+  } else if (assessment) {
     mappedStatus = assessment.badge === 'Not Eligible' ? 'failed' : 'passed';
-  } else if (session) {
-    mappedStatus = session.status === 'completed' ? 'in_progress' : session.status;
   }
 
   let parsedReport: any = undefined;
@@ -46,24 +50,26 @@ const mergeSessionAndAssessment = (session: any, assessment: any): Qualification
     }
   }
 
+  const showAssessment = session ? session.status === 'completed' : !!assessment;
+
   return {
     id: session?.id || assessment?.id,
     user_id: session?.user_id || assessment?.user_id,
     skill_name: session?.skill || assessment?.skill,
     status: mappedStatus,
-    chat_history: session?.transcript || assessment?.interview_transcript || [],
-    score: assessment?.score || undefined,
-    feedback: assessment?.recommendation || (parsedReport && typeof parsedReport === 'object' ? parsedReport.summary : parsedReport) || undefined,
+    chat_history: session?.transcript || [],
+    score: showAssessment ? assessment?.score : undefined,
+    feedback: showAssessment ? (assessment?.recommendation || (parsedReport && typeof parsedReport === 'object' ? parsedReport.summary : parsedReport)) : undefined,
     created_at: session?.created_at || assessment?.created_at,
     updated_at: session?.updated_at || assessment?.created_at,
     
     // Tiered evaluation attributes
-    technical_score: assessment?.technical_score || (parsedReport && typeof parsedReport === 'object' ? (parsedReport.detailed_scores?.technical_accuracy ?? parsedReport.detailed_scores?.technical_score) : undefined) || undefined,
-    communication_score: assessment?.communication_score || (parsedReport && typeof parsedReport === 'object' ? (parsedReport.detailed_scores?.communication ?? parsedReport.detailed_scores?.communication_score) : undefined) || undefined,
-    teaching_score: assessment?.teaching_score || (parsedReport && typeof parsedReport === 'object' ? (parsedReport.detailed_scores?.teaching_ability ?? parsedReport.detailed_scores?.teaching_score) : undefined) || undefined,
-    badge: assessment?.badge || undefined,
-    report: parsedReport,
-    recommendation: assessment?.recommendation || undefined
+    technical_score: showAssessment ? (assessment?.technical_score || (parsedReport && typeof parsedReport === 'object' ? (parsedReport.detailed_scores?.technical_accuracy ?? parsedReport.detailed_scores?.technical_score) : undefined)) : undefined,
+    communication_score: showAssessment ? (assessment?.communication_score || (parsedReport && typeof parsedReport === 'object' ? (parsedReport.detailed_scores?.communication ?? parsedReport.detailed_scores?.communication_score) : undefined)) : undefined,
+    teaching_score: showAssessment ? (assessment?.teaching_score || (parsedReport && typeof parsedReport === 'object' ? (parsedReport.detailed_scores?.teaching_ability ?? parsedReport.detailed_scores?.teaching_score) : undefined)) : undefined,
+    badge: showAssessment ? assessment?.badge : undefined,
+    report: showAssessment ? parsedReport : undefined,
+    recommendation: showAssessment ? assessment?.recommendation : undefined
   };
 };
 
@@ -183,7 +189,8 @@ export const qualificationService = {
     const defaultTranscript = [
       {
         role: 'assistant' as const,
-        content: welcomeMessage
+        content: welcomeMessage,
+        is_pre_interview: true
       }
     ];
 

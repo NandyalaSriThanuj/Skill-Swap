@@ -100,9 +100,13 @@ serve(async (req) => {
     const currentLang = isTech ? 'English' : (selectedLanguage || 'English');
     const skillType = isTech ? 'Technical' : 'Non-Technical';
 
-    // Determine user message/answer count to steer the interview stage
-    const userMessages = chatHistory.filter((m: any) => m.role === 'user');
-    const userAnswersCount = userMessages.length; // number of user responses in history so far
+    // Check if the actual interview has started (i.e. has at least one actual assistant question been asked?)
+    const hasStarted = chatHistory.some((m: any) => m.role === 'assistant' && !m.is_pre_interview);
+    const isPreInterviewConfirmation = !hasStarted;
+
+    // Filter actual messages
+    const actualUserMessages = chatHistory.filter((m: any) => m.role === 'user' && !m.is_pre_interview);
+    const userAnswersCount = actualUserMessages.length; // number of actual user responses in history so far
 
     // Determine the current difficulty level based on index
     const getTargetDifficulty = (isTechnical: boolean, index: number): string => {
@@ -184,11 +188,15 @@ Before outputting any question, check: Does this question belong to the selected
 
     // Add state-specific instruction to guarantee compliance with the question limit
     let stateInstruction = "";
-    if (!isComplete) {
+    if (isPreInterviewConfirmation) {
+      stateInstruction = `The user has confirmed they are ready to start. The interview has NOT started yet. 
+Action: Generate the first actual interview question (Question 1) for the skill ${skillName} in ${currentLang}. 
+Do NOT evaluate the user's confirmation message. Simply ask the first question. 
+Ensure the question strictly belongs to ${skillName} and is at the Beginner difficulty level.`;
+    } else if (!isComplete) {
       stateInstruction = `The user has answered ${userAnswersCount} questions so far. This is question index ${qIndex} out of ${totalQ}. 
 The current target difficulty level is: ${currentDifficulty}.
 Action: Acknowledge the user's previous answer briefly in ${currentLang} (point out strengths or gently nudge on gaps if weak, but keep it very short), then ask the next question in ${currentLang}.
-If this is the very start of the interview (userAnswersCount is 0), do not acknowledge any previous answer; welcome the user to the assessment and ask Question 1 in ${currentLang}.
 Ensure the question strictly belongs to ${skillName} and relates to candidate difficulty level: ${currentDifficulty}. Check: Is the question about ${skillName}? If not, discard and generate another.`;
     } else {
       stateInstruction = `The user has answered all ${totalQ} questions. The interview is concluded.
@@ -386,7 +394,9 @@ Ensure that this JSON block is the very last thing you write, so the application
 
     const updatedHistory = [
       ...chatHistory,
-      { role: 'user', content: newAnswer },
+      isPreInterviewConfirmation 
+        ? { role: 'user', content: newAnswer, is_pre_interview: true } 
+        : { role: 'user', content: newAnswer },
       { role: 'assistant', content: cleanedReply }
     ]
 

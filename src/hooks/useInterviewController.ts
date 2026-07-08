@@ -83,7 +83,7 @@ export const useInterviewController = ({ currentSession, selectedLanguage, total
   }, [selectedLanguage]);
 
   // Derived progress
-  const userMessages = session.chat_history.filter(m => m.role === 'user');
+  const userMessages = session.chat_history.filter(m => m.role === 'user' && !m.is_pre_interview);
   const userAnswersCount = userMessages.length;
   const progress = Math.min(100, Math.round((userAnswersCount / totalQ) * 100));
 
@@ -112,6 +112,27 @@ export const useInterviewController = ({ currentSession, selectedLanguage, total
     setIsProcessing(true);
 
     const currentSession = sessionRef.current;
+    const actualUserMessages = currentSession.chat_history.filter((m: any) => m.role === 'user' && !m.is_pre_interview);
+    const answersCount = actualUserMessages.length;
+
+    if (answersCount === 0) {
+      try {
+        const updated = await qualificationService.updateSession(currentSession.id, {
+          status: 'failed',
+          score: 0,
+          feedback: "Interview ended before any assessment was completed.",
+          badge: "Not Eligible",
+          report: null,
+          recommendation: "Interview ended before any assessment was completed."
+        });
+        setSession(updated);
+      } catch (e) {
+        console.error("Failed to cancel interview:", e);
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
 
     try {
       let result = existingResult;
@@ -310,6 +331,31 @@ export const useInterviewController = ({ currentSession, selectedLanguage, total
       textLower === "that's it";
 
     if (hasExitIntent) {
+      if (userAnswersCount === 0) {
+        speechServiceRef.current?.stop();
+        voiceService?.stop();
+        setIsListening(false);
+        setIsPlaying(false);
+        setIsProcessing(true);
+        const currentSession = sessionRef.current;
+        try {
+          const updated = await qualificationService.updateSession(currentSession.id, {
+            status: 'failed',
+            score: 0,
+            feedback: "Interview ended before any assessment was completed.",
+            badge: "Not Eligible",
+            report: null,
+            recommendation: "Interview ended before any assessment was completed."
+          });
+          setSession(updated);
+        } catch (e) {
+          console.error("Failed to cancel interview before Q1:", e);
+        } finally {
+          setIsProcessing(false);
+        }
+        return;
+      }
+
       setIsConfirmingExit(true);
       const currentSession = sessionRef.current;
       preExitHistoryRef.current = currentSession.chat_history;
