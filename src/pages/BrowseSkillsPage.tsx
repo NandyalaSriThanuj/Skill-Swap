@@ -88,8 +88,10 @@ export const BrowseSkillsPage: React.FC = () => {
     }
     if (profile && profile.skills_teach.length > 0) {
       setSkillWanted(profile.skills_teach[0]); // what current user can teach
+    } else {
+      setSkillWanted("None");
     }
-    setProposalMessage(`Hey ${targetProfile.full_name}, I saw that you can teach ${targetProfile.skills_teach[0] || 'your skills'} and would love to exchange it for ${profile?.skills_teach[0] || 'mine'}!`);
+    setProposalMessage(`Hey ${targetProfile.full_name}, I saw that you can teach ${targetProfile.skills_teach[0] || 'your skills'} and would love to exchange it for ${profile?.skills_teach && profile.skills_teach.length > 0 ? profile.skills_teach[0] : 'nothing in return (free request)'}!`);
   };
 
   const handleCloseModal = () => {
@@ -347,21 +349,22 @@ export const BrowseSkillsPage: React.FC = () => {
                   <label className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
                     Skill I Will Teach (to them)
                   </label>
-                  {profile && profile.skills_teach.length > 0 ? (
-                    <select
-                      value={skillWanted}
-                      onChange={(e) => setSkillWanted(e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white"
-                    >
-                      {profile.skills_teach.map((skill, idx) => (
-                        <option key={idx} value={skill}>{skill}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-250 dark:border-amber-900/40 rounded-xl text-xs text-amber-800 dark:text-amber-300">
-                      You haven't listed any skills you can teach. You must go to your profile and add skills you teach before proposing a swap.
-                    </div>
-                  )}
+                  <select
+                    value={skillWanted}
+                    onChange={(e) => setSkillWanted(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white"
+                  >
+                    {profile && profile.skills_teach.length > 0 ? (
+                      <>
+                        {profile.skills_teach.map((skill, idx) => (
+                          <option key={idx} value={skill}>{skill}</option>
+                        ))}
+                        <option value="None">None (Request to Learn Only)</option>
+                      </>
+                    ) : (
+                      <option value="None">None (Request to Learn Only)</option>
+                    )}
+                  </select>
                 </div>
 
                 {/* Pitch Message */}

@@ -308,8 +308,10 @@ export const ProfilePage: React.FC = () => {
     }
     if (profile && profile.skills_teach.length > 0) {
       setSkillWanted(profile.skills_teach[0]);
+    } else {
+      setSkillWanted("None");
     }
-    setProposalMessage(`Hey ${viewedProfile.full_name}, I saw that you can teach ${viewedProfile.skills_teach[0] || 'your skills'} and would love to exchange it for ${profile?.skills_teach[0] || 'mine'}!`);
+    setProposalMessage(`Hey ${viewedProfile.full_name}, I saw that you can teach ${viewedProfile.skills_teach[0] || 'your skills'} and would love to exchange it for ${profile?.skills_teach && profile.skills_teach.length > 0 ? profile.skills_teach[0] : 'nothing in return (free request)'}!`);
     setShowSwapModal(true);
   };
 
@@ -1025,9 +1027,16 @@ export const ProfilePage: React.FC = () => {
                     onChange={(e) => setSkillWanted(e.target.value)}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white cursor-pointer"
                   >
-                    {profile.skills_teach.map((skill, idx) => (
-                      <option key={idx} value={skill}>{skill}</option>
-                    ))}
+                    {profile.skills_teach && profile.skills_teach.length > 0 ? (
+                      <>
+                        {profile.skills_teach.map((skill, idx) => (
+                          <option key={idx} value={skill}>{skill}</option>
+                        ))}
+                        <option value="None">None (Request to Learn Only)</option>
+                      </>
+                    ) : (
+                      <option value="None">None (Request to Learn Only)</option>
+                    )}
                   </select>
                 </div>
 
