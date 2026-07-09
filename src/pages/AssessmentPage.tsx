@@ -472,31 +472,31 @@ const AssessmentPageInner: React.FC<{ initialSession: QualificationSession }> = 
         <div className="lg:col-span-8 card-premium flex flex-col p-8 justify-between gap-6 transition-all duration-300 min-h-0">
             
             {/* Top Navigation Info-bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-gray-100 dark:border-slate-850 pb-5 text-center shrink-0">
-              <div className="p-3 bg-gray-50/55 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 space-y-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-gray-100 dark:border-slate-800 pb-5 text-center shrink-0">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1">
                 <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">Assessment Topic</span>
-                <p className="text-sm font-black text-gray-805 dark:text-white truncate">
+                <p className="text-sm font-black text-gray-800 dark:text-white truncate">
                   {session.skill_name}
                 </p>
               </div>
-              <div className="p-3 bg-gray-50/55 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 space-y-1">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1">
                 <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">Language</span>
                 <p className="text-sm font-black text-primary-600 dark:text-primary-400">
                   {selectedLanguage === 'Hindi' ? '🇮🇳 Hindi' : selectedLanguage === 'Telugu' ? '🇮🇳 Telugu' : '🇺🇸 English'}
                 </p>
               </div>
-              <div className="p-3 bg-gray-50/55 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 space-y-1">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1">
                 <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block flex items-center justify-center gap-1">
-                  <Clock className="w-3 h-3 text-gray-450" />
+                  <Clock className="w-3 h-3 text-gray-400" />
                   Elapsed Time
                 </span>
                 <p className="text-sm font-black text-gray-800 dark:text-white">
                   {formatDuration(duration)}
                 </p>
               </div>
-              <div className="p-3 bg-gray-50/55 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 space-y-1">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1">
                 <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block flex items-center justify-center gap-1">
-                  <Wifi className="w-3 h-3 text-gray-455" />
+                  <Wifi className="w-3 h-3 text-gray-400" />
                   Network Status
                 </span>
                 <p className={`text-sm font-black ${isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
@@ -644,21 +644,16 @@ const AssessmentPageInner: React.FC<{ initialSession: QualificationSession }> = 
                     style={{ width: `${progressInfo.percentage}%` }}
                   ></div>
                 </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Right Statistics / Analytics Panel */}
+                      {/* Right Statistics / Analytics Panel */}
           <div className="lg:col-span-4 flex flex-col gap-6 shrink-0">
             
             {/* Assessment Diagnostics Card */}
             <div className="card-premium p-6 space-y-6">
-              <div className="border-b border-gray-100 dark:border-slate-850 pb-4">
-                <h3 className="font-heading font-black text-sm text-gray-950 dark:text-white tracking-tight">
+              <div className="border-b border-gray-100 dark:border-slate-800 pb-4">
+                <h3 className="font-heading font-black text-sm text-gray-955 dark:text-white tracking-tight">
                   Session Statistics
                 </h3>
-                <p className="text-xs text-gray-450 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-gray-400 dark:text-slate-400 mt-0.5">
                   Real-time interview analytical metrics.
                 </p>
               </div>
@@ -666,11 +661,11 @@ const AssessmentPageInner: React.FC<{ initialSession: QualificationSession }> = 
               <div className="space-y-4">
                 {/* Visual Ratio */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-gray-50/50 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 text-center">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800/60 text-center">
                     <span className="text-[9px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block">Completed</span>
                     <span className="text-lg font-black text-gray-800 dark:text-white">{progressInfo.step - 1}</span>
                   </div>
-                  <div className="p-3 bg-gray-50/55 dark:bg-slate-850/50 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 text-center">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800/60 text-center">
                     <span className="text-[9px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block">Remaining</span>
                     <span className="text-lg font-black text-gray-800 dark:text-white">{progressInfo.total - (progressInfo.step - 1)}</span>
                   </div>
@@ -695,39 +690,29 @@ const AssessmentPageInner: React.FC<{ initialSession: QualificationSession }> = 
 
                 {/* details items */}
                 <div className="space-y-2.5">
-                  <div className="flex justify-between items-center py-2.5 px-3 bg-gray-55/60 dark:bg-slate-855/50 rounded-xl border border-gray-150/40 dark:border-slate-800/40 text-xs">
+                  <div className="flex justify-between items-center py-2.5 px-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800/60 text-xs">
                     <span className="font-bold text-gray-500 dark:text-slate-400">Speech Confidence</span>
                     <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
                       {isListening ? `${Math.floor(Math.random() * 5) + 94}%` : '96%'}
                     </span>
                   </div>
                   
-                  <div className="flex justify-between items-center py-2.5 px-3 bg-gray-55/60 dark:bg-slate-855/50 rounded-xl border border-gray-150/40 dark:border-slate-800/40 text-xs">
+                  <div className="flex justify-between items-center py-2.5 px-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800/60 text-xs">
                     <span className="font-bold text-gray-500 dark:text-slate-400">Voice Quality</span>
                     <span className="font-extrabold text-blue-600 dark:text-blue-400">
                       {isOnline ? 'Excellent (Lossless)' : 'Good (Compressed)'}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center py-2.5 px-3 bg-gray-55/60 dark:bg-slate-855/50 rounded-xl border border-gray-150/40 dark:border-slate-800/40 text-xs">
+                  <div className="flex justify-between items-center py-2.5 px-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800/60 text-xs">
                     <span className="font-bold text-gray-500 dark:text-slate-400">Interview Status</span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-455 border border-emerald-150/30">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100/30">
                       Assessment Active
                     </span>
                   </div>
                 </div>
 
               </div>
-            </div>
-
-            {/* Alternating Tips Panel */}
-            <div className="card-premium bg-gradient-to-br from-primary-50/50 to-secondary-50/50 p-6 flex flex-col items-center text-center space-y-3 justify-center flex-grow min-h-[140px]">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary-500 bg-primary-500/5 px-2.5 py-1 rounded-full">
-                Interview Tip
-              </span>
-              <p className="text-xs md:text-sm font-semibold text-gray-700 dark:text-slate-350 leading-relaxed transition-all duration-300">
-                "{TIPS[tipIndex]}"
-              </p>
             </div>
 
           </div>
