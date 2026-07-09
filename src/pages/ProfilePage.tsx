@@ -873,7 +873,7 @@ export const ProfilePage: React.FC = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Jane Doe"
-                    className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-805 border border-gray-205 dark:border-slate-750 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white"
+                    className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white"
                   />
                 </div>
 
@@ -888,13 +888,13 @@ export const ProfilePage: React.FC = () => {
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="Share who you are, what you like teaching, and your general availability..."
-                    className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-805 border border-gray-205 dark:border-slate-750 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white"
+                    className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white"
                   />
                 </div>
 
                 {/* Location */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 dark:text-slate-350 uppercase tracking-wider flex items-center">
+                  <label className="text-xs font-bold text-gray-700 dark:text-slate-355 uppercase tracking-wider flex items-center">
                     <MapPin className="w-4 h-4 mr-1.5 text-gray-400" />
                     Location
                   </label>
@@ -903,20 +903,20 @@ export const ProfilePage: React.FC = () => {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="E.g., Hyderabad, Telangana"
-                    className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-805 border border-gray-205 dark:border-slate-750 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white"
+                    className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white"
                   />
                 </div>
 
                 {/* Availability */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 dark:text-slate-350 uppercase tracking-wider flex items-center">
+                  <label className="text-xs font-bold text-gray-700 dark:text-slate-355 uppercase tracking-wider flex items-center">
                     <Activity className="w-4 h-4 mr-1.5 text-gray-400" />
                     Availability Status
                   </label>
                   <select
                     value={availability}
                     onChange={(e) => setAvailability(e.target.value as Profile['availability'])}
-                    className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-805 border border-gray-205 dark:border-slate-750 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white cursor-pointer"
+                    className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white cursor-pointer"
                   >
                     <option value="available">Available to Swap</option>
                     <option value="busy">Busy / Limits swaps</option>

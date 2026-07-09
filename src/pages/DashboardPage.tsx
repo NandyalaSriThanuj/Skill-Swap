@@ -625,7 +625,7 @@ export const DashboardPage: React.FC = () => {
             {(() => {
               if (profile.skills_teach.length === 0) {
                 return (
-                  <div className="p-8 bg-gray-50/50 dark:bg-slate-805/45 border border-dashed border-gray-200 dark:border-slate-800 rounded-2xl text-center space-y-3 max-w-md mx-auto">
+                  <div className="p-8 bg-gray-50/50 dark:bg-slate-800/45 border border-dashed border-gray-200 dark:border-slate-800 rounded-2xl text-center space-y-3 max-w-md mx-auto">
                     <HelpCircle className="w-8 h-8 text-gray-300 mx-auto" />
                     <p className="text-xs text-gray-550 dark:text-slate-400 max-w-sm mx-auto">
                       You haven't added any teaching skills yet. Add skills to your portfolio to become a verified mentor.
