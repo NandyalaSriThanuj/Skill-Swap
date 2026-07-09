@@ -28,6 +28,7 @@ const MOCK_CURRENT_PROFILE_KEY = 'skillswap-mock-profile';
 const DEFAULT_MOCK_PROFILES: Profile[] = [
   {
     id: 'user-alex',
+    email: 'alex@example.com',
     username: 'alex_dev',
     full_name: 'Alex Rivers',
     avatar_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150',
@@ -39,6 +40,7 @@ const DEFAULT_MOCK_PROFILES: Profile[] = [
   },
   {
     id: 'user-elena',
+    email: 'elena@example.com',
     username: 'elena_data',
     full_name: 'Elena Rostova',
     avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
@@ -50,6 +52,7 @@ const DEFAULT_MOCK_PROFILES: Profile[] = [
   },
   {
     id: 'user-marcus',
+    email: 'marcus@example.com',
     username: 'marcus_design',
     full_name: 'Marcus Chen',
     avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
@@ -61,6 +64,7 @@ const DEFAULT_MOCK_PROFILES: Profile[] = [
   },
   {
     id: 'user-sarah',
+    email: 'sarah@example.com',
     username: 'sarah_langs',
     full_name: 'Sarah Jenkins',
     avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
@@ -72,6 +76,7 @@ const DEFAULT_MOCK_PROFILES: Profile[] = [
   },
   {
     id: 'user-david',
+    email: 'david@example.com',
     username: 'david_crafts',
     full_name: 'David Miller',
     avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
@@ -186,6 +191,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string, username: string) => {
     if (isMock) {
+      // Check if a user with this email or username already exists in mock data
+      const allProfiles = JSON.parse(localStorage.getItem(MOCK_PROFILES_KEY) || '[]');
+      const emailExists = allProfiles.some((p: any) => p.email && p.email.toLowerCase() === email.toLowerCase());
+      if (emailExists) {
+        return { error: { message: 'An account with this email address already exists.' } };
+      }
+      const usernameExists = allProfiles.some((p: any) => p.username && p.username.toLowerCase() === username.toLowerCase());
+      if (usernameExists) {
+        return { error: { message: 'This username is already taken.' } };
+      }
+
       // Create a mock user
       const mockId = `mock-user-${Math.random().toString(36).substr(2, 9)}`;
       const mockUser = {
@@ -195,6 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       const mockProfile: Profile = {
         id: mockId,
+        email,
         username,
         full_name: fullName,
         avatar_url: `https://api.dicebear.com/7.x/adventurer/svg?seed=${username}`,
@@ -206,7 +223,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       // Save to mock database
-      const allProfiles = JSON.parse(localStorage.getItem(MOCK_PROFILES_KEY) || '[]');
       allProfiles.push(mockProfile);
       localStorage.setItem(MOCK_PROFILES_KEY, JSON.stringify(allProfiles));
 
@@ -337,9 +353,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const resetPasswordForEmail = async (email: string) => {
     if (isMock) {
+      const allProfiles = JSON.parse(localStorage.getItem(MOCK_PROFILES_KEY) || '[]');
+      const emailExists = allProfiles.some((p: any) => p.email && p.email.toLowerCase() === email.toLowerCase());
+      if (!emailExists) {
+        return { error: { message: 'No account found with this email address.' } };
+      }
       console.log(`[Mock Auth] Reset password email sent to: ${email}`);
       return { error: null };
     }
+
+    // Verify email is registered in Supabase database before sending reset request
+    const { data: profileData, error: queryError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (queryError) {
+      return { error: queryError };
+    }
+
+    if (!profileData) {
+      return { error: { message: 'No account found with this email address.' } };
+    }
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });

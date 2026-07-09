@@ -10,6 +10,7 @@ create extension if not exists "uuid-ossp";
 ---------------------------------------------------------
 create table public.profiles (
   id uuid references auth.users on delete cascade primary key,
+  email text unique,
   username text unique,
   full_name text,
   avatar_url text,
@@ -240,9 +241,10 @@ create trigger trigger_update_swap_requests_updated_at
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, username, full_name, avatar_url, bio, location, availability, skills_teach, skills_learn)
+  insert into public.profiles (id, email, username, full_name, avatar_url, bio, location, availability, skills_teach, skills_learn)
   values (
     new.id,
+    new.email,
     new.raw_user_meta_data->>'username',
     new.raw_user_meta_data->>'full_name',
     'https://api.dicebear.com/7.x/adventurer/svg?seed=' || coalesce(new.raw_user_meta_data->>'username', new.id::text),
