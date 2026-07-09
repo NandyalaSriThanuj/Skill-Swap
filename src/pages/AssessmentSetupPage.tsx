@@ -178,7 +178,7 @@ export const AssessmentSetupPage: React.FC = () => {
                   Select the language you are most comfortable speaking in for this interview.
                 </p>
               </div>
-
+              <div className="space-y-4 flex-grow">
                 {isTechOrDesign ? (
                   <div className="p-5 bg-amber-500/5 border border-amber-500/20 rounded-2xl space-y-4">
                     <p className="text-sm text-amber-700 dark:text-amber-400 font-medium leading-relaxed flex items-start gap-2">
