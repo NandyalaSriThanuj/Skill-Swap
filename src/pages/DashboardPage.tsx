@@ -258,7 +258,7 @@ export const DashboardPage: React.FC = () => {
           );
           return teachesWhatIWant || wantsWhatITeach;
         });
-        setMatches(matched.slice(0, 3));
+        setMatches(matched.slice(0, 6));
 
         const allRequests: SwapRequest[] = JSON.parse(localStorage.getItem('skillswap-mock-requests') || '[]');
         const userRequests = allRequests.filter(req => req.sender_id === profile.id || req.receiver_id === profile.id);
@@ -301,7 +301,7 @@ export const DashboardPage: React.FC = () => {
               );
               return teachesWhatIWant || wantsWhatITeach;
             });
-            setMatches(matched.slice(0, 3));
+            setMatches(matched.slice(0, 6));
           }
 
           // Fetch recent requests
@@ -854,10 +854,10 @@ export const DashboardPage: React.FC = () => {
 
 
       {/* Main Dashboard Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="space-y-6">
         
-        {/* Left Column: Matches & Suggestions (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Full Width: Matches & Suggestions */}
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="font-heading font-extrabold text-2xl text-gray-900 dark:text-white flex items-center">
               <Sparkles className="w-5 h-5 mr-2 text-primary-500" />
@@ -870,7 +870,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {matches.length > 0 ? (
-            <div className="grid sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {matches.map(match => {
                 // Determine if it's a mutual (perfect) match
                 const isMutualMatch = 
@@ -898,7 +898,7 @@ export const DashboardPage: React.FC = () => {
                                 {match.full_name}
                               </h4>
                             </Link>
-                            <p className="text-xs text-gray-500 dark:text-slate-400 truncate">@{match.username}</p>
+                            <p className="text-xs text-gray-550 dark:text-slate-400 truncate">@{match.username}</p>
                           </div>
                         </div>
                         {isMutualMatch ? (
@@ -943,7 +943,7 @@ export const DashboardPage: React.FC = () => {
               <HelpCircle className="w-12 h-12 text-gray-300 mx-auto" />
               <div>
                 <h3 className="font-bold text-base text-gray-800 dark:text-white">No matches found yet</h3>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                <p className="text-xs text-gray-550 dark:text-slate-400 mt-1 max-w-sm mx-auto">
                   Add more detailed skills to teach and learn in your profile to find better matches in the network.
                 </p>
               </div>
@@ -955,76 +955,6 @@ export const DashboardPage: React.FC = () => {
               </Link>
             </div>
           )}
-        </div>
-
-        {/* Right Column: Recent Activity / Swap Requests (1/3) */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading font-extrabold text-2xl text-gray-900 dark:text-white flex items-center">
-              <Inbox className="w-5 h-5 mr-2 text-primary-500" />
-              Swap Requests
-            </h2>
-            <Link to="/requests" className="text-sm font-semibold text-primary-500 hover:text-primary-600">
-              Manage
-            </Link>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
-            {requests.length > 0 ? (
-              <div className="divide-y divide-gray-100 dark:divide-slate-800 space-y-4">
-                {requests.map((req, idx) => {
-                  const isIncoming = req.receiver_id === profile.id;
-                  const targetProfile = isIncoming ? req.sender_profile : req.receiver_profile;
-
-                  return (
-                    <div key={req.id} className={`pt-4 ${idx === 0 ? 'pt-0' : ''} flex items-start justify-between gap-3`}>
-                      <div className="flex items-start space-x-3 min-w-0">
-                        <img
-                          src={targetProfile?.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${targetProfile?.username}`}
-                          alt={targetProfile?.full_name || 'User'}
-                          className="w-9 h-9 rounded-full"
-                        />
-                        <div className="min-w-0">
-                          <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                            {targetProfile?.full_name}
-                          </h4>
-                          <p className="text-[11px] text-gray-500 dark:text-slate-450 mt-0.5 line-clamp-1">
-                            {isIncoming ? 'Offered' : 'Wanted'}: <span className="font-semibold">{req.skill_offered}</span>
-                          </p>
-                          <p className="text-[11px] text-gray-400 mt-0.5">
-                            {new Date(req.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        {getStatusBadge(req.status)}
-                        {req.status === 'approved' && (
-                          <Link
-                            to="/requests"
-                            className="inline-flex items-center text-[10px] font-bold text-primary-500 hover:text-primary-650"
-                          >
-                            <MessageCircle className="w-3 h-3 mr-0.5" />
-                            Chat
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 space-y-3">
-                <Inbox className="w-10 h-10 text-gray-300 mx-auto" />
-                <p className="text-xs text-gray-500 dark:text-slate-400">No recent swap proposals.</p>
-                <Link
-                  to="/browse"
-                  className="inline-flex text-xs font-bold text-primary-500 hover:text-primary-600"
-                >
-                  Browse Swappers
-                </Link>
-              </div>
-            )}
-          </div>
         </div>
 
       </div>
