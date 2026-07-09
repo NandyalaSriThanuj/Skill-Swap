@@ -164,14 +164,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
             )}
             
             {/* Title / Breadcrumb could go here */}
-            <div className="hidden lg:block ml-4 text-sm text-gray-800 dark:text-gray-200">
-              <div className="text-[10px] text-gray-450 dark:text-slate-500 font-bold uppercase tracking-wider leading-none mb-1">
-                {getGreeting()}
-              </div>
-              <div className="font-extrabold text-gray-900 dark:text-white flex items-center leading-none">
-                {profile?.full_name || user?.email?.split('@')[0] || 'Swapper'} 👋
-              </div>
-            </div>
           </div>
 
           {/* Middle Navigation Links (visible only on Landing Page) */}
