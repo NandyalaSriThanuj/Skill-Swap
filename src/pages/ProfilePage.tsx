@@ -25,14 +25,10 @@ import {
   Check,
   ExternalLink,
   Edit,
-  Star,
-  Trophy,
-  Video,
   ChevronRight,
   Send,
   MessageSquare,
-  X,
-  Languages
+  X
 } from 'lucide-react';
 import { qualificationService } from '../lib/qualificationService';
 import { certificateService } from '../lib/certificateService';
@@ -583,7 +579,7 @@ export const ProfilePage: React.FC = () => {
                         className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-primary-500/10 text-primary-400 border border-primary-500/20"
                       >
                         {passedSessions.some(s => s.skill_name.toLowerCase() === skill.toLowerCase()) && (
-                          <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" title="Verified Skill" />
+                          <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
                         )}
                         <span>{skill}</span>
                         {isOwner && (

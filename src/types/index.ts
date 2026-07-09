@@ -19,6 +19,7 @@ export interface Profile {
   last_assessment_timestamp?: string;
   certificates?: any[];
   updated_at?: string;
+  created_at?: string;
 }
 
 export interface Skill {
