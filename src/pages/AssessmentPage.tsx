@@ -644,7 +644,12 @@ const AssessmentPageInner: React.FC<{ initialSession: QualificationSession }> = 
                     style={{ width: `${progressInfo.percentage}%` }}
                   ></div>
                 </div>
-                      {/* Right Statistics / Analytics Panel */}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Statistics / Analytics Panel */}
           <div className="lg:col-span-4 flex flex-col gap-6 shrink-0">
             
             {/* Assessment Diagnostics Card */}
