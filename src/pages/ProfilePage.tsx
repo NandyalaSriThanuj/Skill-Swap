@@ -400,7 +400,7 @@ export const ProfilePage: React.FC = () => {
                 <div className="relative shrink-0">
                   <div className="w-20 h-20 rounded-full border-2 border-primary-500/30 p-0.5 bg-slate-950/80 overflow-hidden shadow-inner">
                     <img
-                      src={viewedProfile.avatar_url || ''}
+                      src={viewedProfile.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${viewedProfile.username || 'default'}`}
                       alt="Avatar"
                       className="w-full h-full rounded-full object-cover object-center"
                     />
@@ -414,7 +414,7 @@ export const ProfilePage: React.FC = () => {
                 <div className="space-y-2 flex-1 min-w-0">
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                     <h1 className="font-heading font-extrabold text-xl sm:text-2xl text-white truncate leading-none">
-                      {viewedProfile.full_name || ''}
+                      {viewedProfile.full_name || 'Nandyala Sri thanuj'}
                     </h1>
                     {verifiedSkillsCount > 0 && (
                       <span className="inline-flex items-center text-blue-500" title="Verified Professional">
@@ -431,13 +431,13 @@ export const ProfilePage: React.FC = () => {
                   )}
 
                   <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
-                    {viewedProfile.bio || "Passionate about teaching and sharing knowledge. Specializing in Programming and Web Development."}
+                    {viewedProfile.bio || 'Excited to share skills'}
                   </p>
 
                   <div className="flex flex-wrap justify-center sm:justify-start gap-y-1 gap-x-3 text-[11px] text-slate-400 font-semibold">
                     <div className="flex items-center">
                       <MapPin className="w-3.5 h-3.5 mr-1 text-slate-500" />
-                      <span>{viewedProfile.location || "Hyderabad, Telangana, India"}</span>
+                      <span>{viewedProfile.location || 'Hyderabad, Telangana'}</span>
                     </div>
                     <div className="flex items-center">
                       <Calendar className="w-3.5 h-3.5 mr-1 text-slate-500" />
