@@ -10,11 +10,13 @@
   /* Primary: #2563EB */
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
+  --color-primary-400: #60a5fa;
   --color-primary-500: #2563eb;
   --color-primary-600: #1d4ed8;
   --color-primary-700: #1e40af;
   
   /* Secondary: #3B82F6 */
+  --color-secondary-400: #60a5fa;
   --color-secondary-500: #3b82f6;
   --color-secondary-600: #2563eb;
   
