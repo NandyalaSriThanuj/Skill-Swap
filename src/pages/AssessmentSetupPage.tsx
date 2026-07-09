@@ -15,6 +15,27 @@ export const AssessmentSetupPage: React.FC = () => {
   const { skillName } = useParams<{ skillName: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
+
+  const decodedSkillName = skillName ? decodeURIComponent(skillName) : '';
+
+  // Check if it's a programming or Design & UX skill
+  const programmingSkills = [
+    'react', 'typescript', 'python', 'tailwind css', 'node.js', 'node', 'machine learning', 
+    'javascript', 'java', 'c++', 'c#', 'go', 'rust', 'ruby', 'php', 'swift', 
+    'programming',
+    'kotlin', 'html', 'css', 'sql', 'nosql', 'git', 'docker', 'kubernetes', 
+    'aws', 'android development', 'ios development', 'cyber security', 'blockchain'
+  ];
+
+  const designSkills = [
+    'figma', 'ui/ux design', 'ui/ux', 'ux', 'ui', 'branding', 'photoshop', 'illustrator', 'graphic design', 
+    'web design', 'motion graphics', '3d modeling', 'video editing', 'product design', 
+    'logo design', 'interaction design', 'wireframing', 'prototyping', 'design'
+  ];
+
+  const isTechOrDesign = [...programmingSkills, ...designSkills].some(
+    keyword => decodedSkillName.toLowerCase().includes(keyword.toLowerCase())
+  );
   
   const [currentStep, setCurrentStep] = useState<SetupStep>('language');
   const [selectedLanguage, setSelectedLanguage] = useState('');
@@ -22,6 +43,12 @@ export const AssessmentSetupPage: React.FC = () => {
   const [hasAgreed, setHasAgreed] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    if (isTechOrDesign) {
+      setSelectedLanguage('English');
+    }
+  }, [isTechOrDesign]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -61,10 +88,6 @@ export const AssessmentSetupPage: React.FC = () => {
   };
 
   if (!skillName) return null;
-  const decodedSkillName = decodeURIComponent(skillName);
-
-  // Check if it's a technical skill
-  const isTech = ['react', 'python', 'sql', 'node', 'javascript', 'aws', 'typescript', 'programming'].some(t => decodedSkillName.toLowerCase().includes(t));
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 flex flex-col min-h-[85vh] animate-in fade-in duration-300">
@@ -156,12 +179,11 @@ export const AssessmentSetupPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="space-y-4 flex-grow">
-                {isTech ? (
+                {isTechOrDesign ? (
                   <div className="p-5 bg-amber-500/5 border border-amber-500/20 rounded-2xl space-y-4">
                     <p className="text-sm text-amber-700 dark:text-amber-400 font-medium leading-relaxed flex items-start gap-2">
                       <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                      Technical interviews must be conducted in English to properly evaluate industry-standard terminology.
+                      Programming and Design & UX interviews must be conducted in English to properly evaluate industry-standard terminology.
                     </p>
                     <button
                       onClick={() => setSelectedLanguage('English')}
