@@ -59,7 +59,11 @@ export const useInterviewController = ({ currentSession, selectedLanguage, total
       onWaitingForSilence: (isWaiting) => {
         setIsWaitingForSilence(isWaiting);
       },
-      onError: (err) => console.error("Speech error", err),
+      onError: (err) => {
+        if (err && err.error !== 'no-speech') {
+          console.error("Speech error", err);
+        }
+      },
       onEnd: () => setIsListening(false),
     });
     
