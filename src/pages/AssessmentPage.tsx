@@ -317,10 +317,12 @@ const AssessmentPageInner: React.FC<{ initialSession: QualificationSession }> = 
   const isGeneratingReport = isSending;
   const [hasAutoStarted, setHasAutoStarted] = useState(false);
   const [tipIndex, setTipIndex] = useState(0);
+  const startedRef = useRef(false);
 
   // Auto-start interview if it hasn't started yet since setup is handled in AssessmentSetupPage
   useEffect(() => {
-    if (session && !hasAutoStarted && micPermission === true) {
+    if (session && !hasAutoStarted && micPermission === true && !startedRef.current) {
+      startedRef.current = true;
       setHasAutoStarted(true);
       startInterview();
     }

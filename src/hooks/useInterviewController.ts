@@ -32,7 +32,7 @@ export const useInterviewController = ({ currentSession, selectedLanguage, total
     sessionRef.current = session;
   }, [session]);
 
-  const interviewStarted = session && session.chat_history && session.chat_history.length > 1;
+  const interviewStarted = session && session.chat_history && session.chat_history.length >= 1;
 
   useEffect(() => {
     let interval: any;
