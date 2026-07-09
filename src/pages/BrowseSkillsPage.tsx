@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import type { Profile, SwapRequest, QualificationSession } from '../types';
 import { SkillCard } from '../components/SkillCard';
 import { qualificationService } from '../lib/qualificationService';
+import { supabase } from '../lib/supabaseClient';
 import { 
   Search, 
   Sparkles, 
@@ -14,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export const BrowseSkillsPage: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, isMock } = useAuth();
   const [searchParams] = useSearchParams();
   const location = useLocation();
 
@@ -30,14 +31,27 @@ export const BrowseSkillsPage: React.FC = () => {
   const [proposalMessage, setProposalMessage] = useState('');
   const [modalSuccess, setModalSuccess] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const categories = ['All', 'Programming', 'Design & UX', 'Languages', 'Music & Art', 'Gardening & Crafts'];
 
   // Load all profiles
   useEffect(() => {
     const loadProfiles = async () => {
-      const allProfiles: Profile[] = JSON.parse(localStorage.getItem('skillswap-mock-profiles') || '[]');
-      setProfiles(allProfiles);
+      if (isMock) {
+        const allProfiles: Profile[] = JSON.parse(localStorage.getItem('skillswap-mock-profiles') || '[]');
+        setProfiles(allProfiles);
+      } else {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*');
+          if (error) throw error;
+          setProfiles(data as Profile[] || []);
+        } catch (err) {
+          console.error('Error loading profiles from Supabase:', err);
+        }
+      }
 
       try {
         const sessions = await qualificationService.getAllPassedSessions();
@@ -85,7 +99,7 @@ export const BrowseSkillsPage: React.FC = () => {
     setProposalMessage('');
   };
 
-  const handleSubmitSwapRequest = (e: React.FormEvent) => {
+  const handleSubmitSwapRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile || !selectedTargetProfile) return;
 
@@ -94,27 +108,54 @@ export const BrowseSkillsPage: React.FC = () => {
       return;
     }
 
-    // Create swap request
-    const newRequest: SwapRequest = {
-      id: `req-${Math.random().toString(36).substr(2, 9)}`,
-      sender_id: profile.id,
-      receiver_id: selectedTargetProfile.id,
-      skill_offered: skillWanted, // skill I will teach the other person
-      skill_wanted: skillOffered, // skill the other person will teach me
-      status: 'pending',
-      message: proposalMessage,
-      created_at: new Date().toISOString()
-    };
+    if (isMock) {
+      // Create swap request
+      const newRequest: SwapRequest = {
+        id: `req-${Math.random().toString(36).substr(2, 9)}`,
+        sender_id: profile.id,
+        receiver_id: selectedTargetProfile.id,
+        skill_offered: skillWanted, // skill I will teach the other person
+        skill_wanted: skillOffered, // skill the other person will teach me
+        status: 'pending',
+        message: proposalMessage,
+        created_at: new Date().toISOString()
+      };
 
-    // Save mock request
-    const allRequests: SwapRequest[] = JSON.parse(localStorage.getItem('skillswap-mock-requests') || '[]');
-    allRequests.push(newRequest);
-    localStorage.setItem('skillswap-mock-requests', JSON.stringify(allRequests));
+      // Save mock request
+      const allRequests: SwapRequest[] = JSON.parse(localStorage.getItem('skillswap-mock-requests') || '[]');
+      allRequests.push(newRequest);
+      localStorage.setItem('skillswap-mock-requests', JSON.stringify(allRequests));
 
-    setModalSuccess(true);
-    setTimeout(() => {
-      handleCloseModal();
-    }, 2000);
+      setModalSuccess(true);
+      setTimeout(() => {
+        handleCloseModal();
+      }, 2000);
+    } else {
+      setLoading(true);
+      setModalError(null);
+      try {
+        const { error } = await supabase.from('swap_requests').insert({
+          sender_id: profile.id,
+          receiver_id: selectedTargetProfile.id,
+          skill_offered: skillWanted, // skill I will teach
+          skill_wanted: skillOffered,  // skill I want to learn
+          message: proposalMessage,
+          status: 'pending'
+        });
+
+        if (error) throw error;
+
+        setModalSuccess(true);
+        setTimeout(() => {
+          handleCloseModal();
+        }, 2000);
+      } catch (err: any) {
+        console.error('Error creating swap request:', err);
+        setModalError(err.message || 'Failed to submit proposal.');
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   // Filter logic
