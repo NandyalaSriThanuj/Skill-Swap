@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, User, AlertCircle, Info, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, User, AlertCircle, Info, Sparkles, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 export const AuthPage: React.FC = () => {
   const { signIn, signUp, user, isMock, resetPasswordForEmail } = useAuth();
@@ -80,7 +80,17 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50 dark:bg-slate-950 px-4 py-12 transition-colors duration-300">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-950 px-4 py-12 transition-colors duration-300 gap-4">
+      <div className="max-w-md w-full flex justify-start">
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center space-x-1.5 text-xs font-semibold text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Home</span>
+        </button>
+      </div>
+
       <div className="max-w-md w-full space-y-8 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-xl">
         <div className="text-center space-y-2">
           <h2 className="font-heading font-extrabold text-3xl text-gray-900 dark:text-white">
