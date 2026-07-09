@@ -538,11 +538,11 @@ export const ProfilePage: React.FC = () => {
               </div>
             </div>
             <div className="space-y-0.5 py-1">
-              <div className="text-xl font-black text-blue-400">{completedInterviewsCount || 3}</div>
+              <div className="text-xl font-black text-blue-400">{completedInterviewsCount}</div>
               <div className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">Interviews Completed</div>
             </div>
             <div className="space-y-0.5 py-1">
-              <div className="text-xl font-black text-emerald-400">{badgesCount || 3}</div>
+              <div className="text-xl font-black text-emerald-400">{badgesCount}</div>
               <div className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">Badges Earned</div>
             </div>
             <div className="space-y-0.5 py-1">
