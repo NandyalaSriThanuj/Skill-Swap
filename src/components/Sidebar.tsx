@@ -10,7 +10,8 @@ import {
   Bell, 
   Settings,
   X,
-  Repeat
+  Repeat,
+  Video
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -30,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
   const accountNav = [
     { name: 'Swap Requests', path: '/requests', icon: Bell },
+    { name: 'My Sessions', path: '/sessions', icon: Video },
     { name: 'Profile', path: '/profile', icon: UserIcon },
     { name: 'Certificates', path: '/certificates', icon: Award },
     { name: 'Interview Summaries', path: '/summaries', icon: ShieldCheck },

@@ -13,6 +13,7 @@ import ProfilePage from './pages/ProfilePage';
 import RequestsPage from './pages/RequestsPage';
 import SkillsPage from './pages/SkillsPage';
 import SessionPage from './pages/SessionPage';
+import MySessionsPage from './pages/MySessionsPage';
 import AssessmentPage from './pages/AssessmentPage';
 import AssessmentSetupPage from './pages/AssessmentSetupPage';
 import CertificatesPage from './pages/CertificatesPage';
@@ -38,6 +39,7 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute><Layout><ProfilePage /></Layout></ProtectedRoute>} />
             <Route path="/profile/:userId" element={<ProtectedRoute><Layout><ProfilePage /></Layout></ProtectedRoute>} />
             <Route path="/requests" element={<ProtectedRoute><Layout><RequestsPage /></Layout></ProtectedRoute>} />
+            <Route path="/sessions" element={<ProtectedRoute><Layout><MySessionsPage /></Layout></ProtectedRoute>} />
             <Route path="/session/:roomId" element={<ProtectedRoute><Layout><SessionPage /></Layout></ProtectedRoute>} />
             <Route path="/assessment-setup/:skillName" element={<ProtectedRoute><Layout><AssessmentSetupPage /></Layout></ProtectedRoute>} />
             <Route path="/assessment/:sessionId" element={<ProtectedRoute><Layout><AssessmentPage /></Layout></ProtectedRoute>} />

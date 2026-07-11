@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import type { Profile, LearningSession } from '../types';
+import { sessionService } from '../lib/sessionService';
+import { notificationService } from '../lib/notificationService';
+import type { Profile } from '../types';
 import {
   Video,
   MessageSquare,
@@ -15,7 +17,16 @@ import {
   Users,
   Copy,
   Check,
-  BookOpen
+  BookOpen,
+  Play,
+  CheckCircle,
+  Star,
+  ExternalLink,
+  Code,
+  Image,
+  Paperclip,
+  Award,
+  AlertCircle
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -33,263 +44,161 @@ export const SessionPage: React.FC = () => {
   const { profile, isMock } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<LearningSession | null>(null);
+  const [session, setSession] = useState<any | null>(null);
   const [learnerProfile, setLearnerProfile] = useState<Profile | null>(null);
   const [mentorProfile, setMentorProfile] = useState<Profile | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isExpired, setIsExpired] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<string>('');
-  
-  // Shared Workspace Tabs: 'chat' | 'notes'
-  const [activeTab, setActiveTab] = useState<'chat' | 'notes'>('chat');
-  
-  // Chat States
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  
-  // Notes State
-  const [notes, setNotes] = useState('');
-  const [isSavingNotes, setIsSavingNotes] = useState(false);
-
-  // Clipboard feedback
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Dynamic Jitsi Join State
-  const [videoActive, setVideoActive] = useState(true);
+  // Workspace layout tabs: 'chat' | 'notes'
+  const [activeTab, setActiveTab] = useState<'chat' | 'notes'>('chat');
 
-  // Ref for debounced notes saving timeout
+  // Chat/Notes states
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<any>(null);
+
+  // Active status/timer states
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  // Attachment overlay states
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [codeContent, setCodeContent] = useState('');
+  
+  // Rating/Feedback modal state
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [ratingScore, setRatingScore] = useState(5);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   if (!profile) return null;
 
-  // 1. Fetch Session Info & Validate Security
-  useEffect(() => {
-    const fetchSessionDetails = async () => {
-      if (!roomId || !profile) return;
-      setLoading(true);
+  // 1. Fetch Session Info & Validate Access
+  const fetchSessionDetails = async () => {
+    if (!roomId || !profile) return;
+    try {
+      const data = await sessionService.fetchSessionByRoomId(roomId);
+      if (data) {
+        setSession(data);
+        const hasAccess = data.learner_id === profile.id || data.mentor_id === profile.id;
+        setIsAuthorized(hasAccess);
+        
+        if (hasAccess) {
+          setLearnerProfile(data.learner);
+          setMentorProfile(data.mentor);
+          setNotes(data.shared_notes || '');
+          setProgress(data.progress || 0);
 
-      try {
-        if (isMock) {
-          // --- Mock Flow ---
-          const allSessions: LearningSession[] = JSON.parse(
-            localStorage.getItem('skillswap-mock-sessions') || '[]'
-          );
-          const currentSession = allSessions.find(s => s.room_id === roomId);
-
-          if (currentSession) {
-            setSession(currentSession);
-            
-            // Check authorization
-            const hasAccess =
-              currentSession.learner_id === profile.id ||
-              currentSession.mentor_id === profile.id;
-            setIsAuthorized(hasAccess);
-
-            if (hasAccess) {
-              // Check Expiry
-              const expiryTime = new Date(currentSession.expires_at).getTime();
-              const now = Date.now();
-              if (now > expiryTime) {
-                setIsExpired(true);
-                currentSession.status = 'expired';
-                localStorage.setItem('skillswap-mock-sessions', JSON.stringify(allSessions));
-              }
-
-              // Hydrate participant profiles
-              const allProfiles: Profile[] = JSON.parse(
-                localStorage.getItem('skillswap-mock-profiles') || '[]'
-              );
-              const learner = allProfiles.find(p => p.id === currentSession.learner_id) || null;
-              const mentor = allProfiles.find(p => p.id === currentSession.mentor_id) || null;
-              setLearnerProfile(learner);
-              setMentorProfile(mentor);
-
-              // Load shared notes
-              const savedNotes = localStorage.getItem(`skillswap-mock-session-notes-${roomId}`) || '';
-              setNotes(savedNotes);
-            }
-          } else {
-            // Session not found
-            setSession(null);
-            setIsAuthorized(false);
-          }
-        } else {
-          // --- Real Supabase Flow ---
-          const { data: currentSession, error: sessionErr } = await supabase
-            .from('learning_sessions')
-            .select('*')
-            .eq('room_id', roomId)
-            .maybeSingle();
-
-          if (sessionErr) throw sessionErr;
-
-          if (currentSession) {
-            setSession(currentSession as LearningSession);
-
-            // Check authorization
-            const hasAccess =
-              currentSession.learner_id === profile.id ||
-              currentSession.mentor_id === profile.id;
-            setIsAuthorized(hasAccess);
-
-            if (hasAccess) {
-              // Check Expiry
-              const expiryTime = new Date(currentSession.expires_at).getTime();
-              const now = Date.now();
-              if (now > expiryTime) {
-                setIsExpired(true);
-              }
-
-              // Fetch Profiles
-              const { data: profiles, error: profilesErr } = await supabase
-                .from('profiles')
-                .select('*')
-                .in('id', [currentSession.learner_id, currentSession.mentor_id]);
-
-              if (profilesErr) throw profilesErr;
-
-              if (profiles) {
-                const learner = profiles.find(p => p.id === currentSession.learner_id) || null;
-                const mentor = profiles.find(p => p.id === currentSession.mentor_id) || null;
-                setLearnerProfile(learner);
-                setMentorProfile(mentor);
-              }
-
-              // Load notes from DB
-              setNotes((currentSession as any).shared_notes || '');
-            }
-          } else {
-            setSession(null);
-            setIsAuthorized(false);
+          // If session is completed and user is learner and rating not filled, open modal
+          if (data.status === 'completed' && data.learner_id === profile.id && !data.mentor_rating) {
+            setIsFeedbackOpen(true);
           }
         }
-      } catch (err) {
-        console.error('Error fetching session details:', err);
-      } finally {
-        setLoading(false);
+      } else {
+        setSession(null);
+        setIsAuthorized(false);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching session details:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchSessionDetails();
-  }, [roomId, profile, isMock]);
-
-  // 2. Poll/Sync Chat & Shared Notes
   useEffect(() => {
-    if (!isAuthorized || isExpired || !roomId || !profile) return;
+    fetchSessionDetails();
+  }, [roomId, profile]);
+
+  // 2. Real-time Synced Channels & Polling
+  useEffect(() => {
+    if (!isAuthorized || !roomId || !profile) return;
 
     if (isMock) {
-      // Load initial chat
-      const getChatKey = () => `skillswap-chat-messages-${roomId}`;
-      
       const loadChat = () => {
-        const allChats: ChatMessage[] = JSON.parse(localStorage.getItem(getChatKey()) || '[]');
+        const chatKey = `skillswap-chat-messages-${roomId}`;
+        const allChats: ChatMessage[] = JSON.parse(localStorage.getItem(chatKey) || '[]');
         setChatMessages(allChats);
       };
 
-      // Load initial notes
-      const loadNotes = () => {
-        const savedNotes = localStorage.getItem(`skillswap-mock-session-notes-${roomId}`) || '';
-        setNotes(savedNotes);
+      const loadNotesAndProgress = () => {
+        const mockSessions = JSON.parse(localStorage.getItem('skillswap-mock-sessions') || '[]');
+        const current = mockSessions.find((s: any) => s.room_id === roomId);
+        if (current) {
+          setNotes(current.shared_notes || '');
+          setProgress(current.progress || 0);
+          
+          if (current.status !== session?.status) {
+            setSession(current);
+            if (current.status === 'completed' && current.learner_id === profile.id && !current.mentor_rating) {
+              setIsFeedbackOpen(true);
+            }
+          }
+        }
       };
 
       loadChat();
-
-      // Setup polling every 1.5 seconds for real-time synchronization between tabs
-      const syncInterval = setInterval(() => {
+      const interval = setInterval(() => {
         loadChat();
-        loadNotes();
-      }, 1500);
+        loadNotesAndProgress();
+      }, 2000);
 
-      return () => clearInterval(syncInterval);
+      return () => clearInterval(interval);
     } else {
-      // --- Real Supabase Flow ---
-      // Fetch initial chat messages
+      // Supabase Live Subscriptions
       const fetchChatMessages = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('session_messages')
-            .select('*, profiles:sender_id(full_name, avatar_url)')
-            .eq('room_id', roomId)
-            .order('created_at', { ascending: true });
-
-          if (error) throw error;
-          if (data) {
-            const formatted = data.map((msg: any) => ({
+        const { data } = await supabase
+          .from('session_messages')
+          .select('*, profiles:sender_id(full_name, avatar_url)')
+          .eq('room_id', roomId)
+          .order('created_at', { ascending: true });
+        
+        if (data) {
+          setChatMessages(
+            data.map((msg: any) => ({
               id: msg.id,
               sender_id: msg.sender_id,
               sender_name: msg.profiles?.full_name || 'Anonymous',
               sender_avatar: msg.profiles?.avatar_url || null,
               content: msg.content,
               created_at: msg.created_at
-            }));
-            setChatMessages(formatted);
-          }
-        } catch (err) {
-          console.error('Error fetching chat messages:', err);
+            }))
+          );
         }
       };
       
       fetchChatMessages();
 
-      // Subscribe to real-time chat messages
       const chatChannel = supabase
-        .channel(`room_chat:${roomId}`)
+        .channel(`session_chat:${roomId}`)
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
           table: 'session_messages',
           filter: `room_id=eq.${roomId}`
-        }, (payload) => {
-          const newMsg = payload.new as any;
-          const senderId = newMsg.sender_id;
-          
-          let senderName = 'Anonymous';
-          let senderAvatar: string | null = null;
-          
-          if (senderId === profile.id) {
-            senderName = profile.full_name || 'You';
-            senderAvatar = profile.avatar_url;
-          } else if (senderId === learnerProfile?.id) {
-            senderName = learnerProfile?.full_name || 'Learner';
-            senderAvatar = learnerProfile?.avatar_url || null;
-          } else if (senderId === mentorProfile?.id) {
-            senderName = mentorProfile?.full_name || 'Mentor';
-            senderAvatar = mentorProfile?.avatar_url || null;
-          }
-
-          const formattedMsg: ChatMessage = {
-            id: newMsg.id,
-            sender_id: senderId,
-            sender_name: senderName,
-            sender_avatar: senderAvatar,
-            content: newMsg.content,
-            created_at: newMsg.created_at
-          };
-
-          setChatMessages(prev => {
-            if (prev.some(m => m.id === formattedMsg.id)) return prev;
-            return [...prev, formattedMsg];
-          });
+        }, () => {
+          fetchChatMessages();
         })
         .subscribe();
 
-      // Subscribe to collaborative notes
       const notesChannel = supabase
-        .channel(`room_session:${roomId}`)
+        .channel(`session_updates:${roomId}`)
         .on('postgres_changes', {
           event: 'UPDATE',
           schema: 'public',
           table: 'learning_sessions',
           filter: `room_id=eq.${roomId}`
         }, (payload) => {
-          const updatedSession = payload.new as any;
-          setNotes(prev => {
-            if (prev !== updatedSession.shared_notes) {
-              return updatedSession.shared_notes || '';
-            }
-            return prev;
-          });
+          const updated = payload.new as any;
+          setSession(updated);
+          setNotes(updated.shared_notes || '');
+          setProgress(updated.progress || 0);
+          if (updated.status === 'completed' && updated.learner_id === profile.id && !updated.mentor_rating) {
+            setIsFeedbackOpen(true);
+          }
         })
         .subscribe();
 
@@ -298,34 +207,24 @@ export const SessionPage: React.FC = () => {
         supabase.removeChannel(notesChannel);
       };
     }
-  }, [isAuthorized, isExpired, roomId, profile, learnerProfile, mentorProfile, isMock]);
+  }, [isAuthorized, roomId, profile, session?.status]);
 
-  // 3. Countdown timer for session expiration
+  // 3. Elapsed Duration Timer
   useEffect(() => {
-    if (!session || isExpired) return;
+    if (session?.status !== 'active' || !session?.started_at) return;
 
-    const interval = setInterval(() => {
-      const expiryTime = new Date(session.expires_at).getTime();
-      const diff = expiryTime - Date.now();
+    const updateTimer = () => {
+      const start = new Date(session.started_at).getTime();
+      const elapsed = Math.floor((Date.now() - start) / 1000);
+      setElapsedTime(elapsed > 0 ? elapsed : 0);
+    };
 
-      if (diff <= 0) {
-        setIsExpired(true);
-        clearInterval(interval);
-        setTimeLeft('Expired');
-      } else {
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
-        const pad = (n: number) => n.toString().padStart(2, '0');
-        setTimeLeft(`${hours > 0 ? hours + 'h ' : ''}${pad(minutes)}m ${pad(seconds)}s`);
-      }
-    }, 1000);
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
+    return () => clearInterval(timerInterval);
+  }, [session?.status, session?.started_at]);
 
-    return () => clearInterval(interval);
-  }, [session, isExpired]);
-
-  // Scroll to bottom of chat
+  // Scroll to bottom on new messages
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
@@ -333,86 +232,183 @@ export const SessionPage: React.FC = () => {
   const saveNotesToDb = async (val: string) => {
     if (isMock || !roomId) return;
     try {
-      const { error } = await supabase
+      await supabase
         .from('learning_sessions')
         .update({ shared_notes: val })
         .eq('room_id', roomId);
-      if (error) console.error('Error saving notes to DB:', error);
     } catch (err) {
       console.error('Error saving notes:', err);
     }
   };
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    };
-  }, []);
-
-  // 4. Send Message Handler
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !profile || !roomId) return;
-
-    if (isMock) {
-      const chatMsg: ChatMessage = {
-        id: `chat-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        sender_id: profile.id,
-        sender_name: profile.full_name || 'Anonymous',
-        sender_avatar: profile.avatar_url,
-        content: newMessage.trim(),
-        created_at: new Date().toISOString()
-      };
-
-      const chatKey = `skillswap-chat-messages-${roomId}`;
-      const allChats: ChatMessage[] = JSON.parse(localStorage.getItem(chatKey) || '[]');
-      allChats.push(chatMsg);
-      localStorage.setItem(chatKey, JSON.stringify(allChats));
-
-      setChatMessages(prev => [...prev, chatMsg]);
-      setNewMessage('');
-    } else {
-      try {
-        const { error } = await supabase
-          .from('session_messages')
-          .insert({
-            room_id: roomId,
-            sender_id: profile.id,
-            content: newMessage.trim()
-          });
-
-        if (error) {
-          console.error('Error sending message to Supabase:', error);
-        } else {
-          setNewMessage('');
-        }
-      } catch (err) {
-        console.error('Error sending message:', err);
-      }
-    }
-  };
-
-  // 5. Notes Editor Autosave handler
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setNotes(val);
     setIsSavingNotes(true);
 
     if (isMock) {
-      // Save to local storage
       localStorage.setItem(`skillswap-mock-session-notes-${roomId}`, val);
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = setTimeout(() => {
-        setIsSavingNotes(false);
-      }, 800);
+      saveTimeoutRef.current = setTimeout(() => setIsSavingNotes(false), 800);
     } else {
-      // Debounce saving notes to Supabase DB
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(async () => {
         await saveNotesToDb(val);
         setIsSavingNotes(false);
       }, 1000);
+    }
+  };
+
+  const handleStartSession = async () => {
+    try {
+      setLoading(true);
+      await sessionService.startSession(roomId!);
+      await fetchSessionDetails();
+
+      // Trigger Start Notification
+      await notificationService.createNotification({
+        user_id: session.learner_id,
+        type: 'swap',
+        title: 'Session Started!',
+        message: `${profile.full_name || 'Your mentor'} has started the session. Join now!`,
+        priority: 'High',
+        action_url: `/session/${roomId}`
+      });
+    } catch (err) {
+      console.error('Error starting session:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompleteSession = async () => {
+    const confirmComplete = window.confirm("Are you sure you want to complete this learning session?");
+    if (!confirmComplete) return;
+
+    try {
+      setLoading(true);
+      // Completes session. Learner rating is collected in feedback modal next.
+      if (isMock) {
+        const mockSessions = JSON.parse(localStorage.getItem('skillswap-mock-sessions') || '[]');
+        const idx = mockSessions.findIndex((s: any) => s.room_id === roomId);
+        if (idx !== -1) {
+          mockSessions[idx].status = 'completed';
+          mockSessions[idx].completed_at = new Date().toISOString();
+          mockSessions[idx].duration_seconds = elapsedTime;
+          localStorage.setItem('skillswap-mock-sessions', JSON.stringify(mockSessions));
+        }
+      } else {
+        await supabase
+          .from('learning_sessions')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            duration_seconds: elapsedTime
+          })
+          .eq('room_id', roomId);
+      }
+
+      // Notify Learner to rate
+      await notificationService.createNotification({
+        user_id: session.learner_id,
+        type: 'swap',
+        title: 'Session Completed - Feedback Requested',
+        message: 'Your session has ended. Please provide feedback and rate your mentor.',
+        priority: 'Medium',
+        action_url: `/session/${roomId}`
+      });
+
+      await fetchSessionDetails();
+    } catch (err) {
+      console.error('Error completing session:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProgressChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value, 10);
+    setProgress(val);
+    try {
+      await sessionService.updateProgress(roomId!, val);
+    } catch (err) {
+      console.error('Error updating progress:', err);
+    }
+  };
+
+  const handleSendChatMessage = async (text: string) => {
+    if (!text.trim() || !roomId) return;
+    if (isMock) {
+      const chatMsg: ChatMessage = {
+        id: `chat-${Date.now()}`,
+        sender_id: profile.id,
+        sender_name: profile.full_name || 'You',
+        sender_avatar: profile.avatar_url,
+        content: text,
+        created_at: new Date().toISOString()
+      };
+      const chatKey = `skillswap-chat-messages-${roomId}`;
+      const all: ChatMessage[] = JSON.parse(localStorage.getItem(chatKey) || '[]');
+      all.push(chatMsg);
+      localStorage.setItem(chatKey, JSON.stringify(all));
+      setChatMessages(prev => [...prev, chatMsg]);
+    } else {
+      await supabase
+        .from('session_messages')
+        .insert({
+          room_id: roomId,
+          sender_id: profile.id,
+          content: text
+        });
+    }
+  };
+
+  const handleSendCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!codeContent.trim()) return;
+    handleSendChatMessage(`[Code:${codeContent}]`);
+    setCodeContent('');
+    setShowCodeInput(false);
+  };
+
+  const handleSendMockFile = (name: string, type: 'File' | 'Image') => {
+    handleSendChatMessage(`[${type}:${name}]`);
+  };
+
+  const handleSendMockResource = () => {
+    const url = window.prompt("Enter resource URL:");
+    if (url) {
+      handleSendChatMessage(`[Resource:${url}]`);
+    }
+  };
+
+  const submitFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSubmittingFeedback(true);
+      await sessionService.completeSession(roomId!, {
+        duration_seconds: session.duration_seconds || elapsedTime || 3600,
+        progress,
+        mentor_rating: ratingScore,
+        learner_feedback: feedbackComment
+      });
+
+      // Notify Mentor that review has been left
+      await notificationService.createNotification({
+        user_id: session.mentor_id,
+        type: 'swap',
+        title: 'Review Received!',
+        message: `${profile.full_name || 'Learner'} gave you a rating of ${ratingScore}/5.`,
+        priority: 'Medium',
+        action_url: `/profile`
+      });
+
+      setIsFeedbackOpen(false);
+      await fetchSessionDetails();
+    } catch (err) {
+      console.error('Error submitting feedback:', err);
+    } finally {
+      setSubmittingFeedback(false);
     }
   };
 
@@ -423,39 +419,76 @@ export const SessionPage: React.FC = () => {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  // --- RENDERING HANDLERS ---
+  const formatTimer = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${hours > 0 ? hours + ':' : ''}${pad(minutes)}:${pad(seconds)}`;
+  };
+
+  const renderChatMessageContent = (content: string) => {
+    if (content.startsWith('[Code:')) {
+      const code = content.slice(6, -1);
+      return (
+        <div className="space-y-1 mt-1 text-left">
+          <div className="flex items-center justify-between text-[9px] text-slate-400 border-b border-slate-700/60 pb-1">
+            <span>SHARED CODE SNIPPET</span>
+            <button onClick={() => navigator.clipboard.writeText(code)} className="hover:text-white font-bold">Copy</button>
+          </div>
+          <pre className="bg-slate-950 p-2.5 rounded-lg text-[10px] font-mono overflow-x-auto text-emerald-400 leading-relaxed max-w-full">
+            <code>{code}</code>
+          </pre>
+        </div>
+      );
+    }
+    if (content.startsWith('[File:') || content.startsWith('[Image:')) {
+      const isImg = content.startsWith('[Image:');
+      const name = content.slice(isImg ? 7 : 6, -1);
+      return (
+        <div className="flex items-center space-x-2 bg-slate-950/20 p-2 rounded-xl border border-slate-800/80 mt-1 text-left">
+          {isImg ? <Image className="w-5 h-5 text-amber-500 shrink-0" /> : <Paperclip className="w-5 h-5 text-blue-500 shrink-0" />}
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold text-slate-200 truncate">{name}</p>
+            <p className="text-[8px] text-slate-500">{isImg ? 'Image attachment' : 'Document file'}</p>
+          </div>
+          <button className="text-[10px] font-bold text-primary-400 hover:text-primary-500">View</button>
+        </div>
+      );
+    }
+    if (content.startsWith('[Resource:')) {
+      const link = content.slice(10, -1);
+      return (
+        <a href={link} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1.5 text-blue-450 dark:text-blue-400 hover:underline mt-1 text-left">
+          <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate max-w-xs">{link}</span>
+        </a>
+      );
+    }
+    return <p className="text-left whitespace-pre-wrap">{content}</p>;
+  };
 
   if (loading) {
     return (
       <div className="min-h-[70vh] flex flex-col justify-center items-center space-y-4">
         <Loader2 className="w-12 h-12 text-primary-500 animate-spin" />
-        <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">
-          Connecting to private room...
-        </p>
+        <p className="text-gray-505 dark:text-slate-400 font-medium animate-pulse">Connecting to live room...</p>
       </div>
     );
   }
 
-  // Unauthorized screen
   if (!isAuthorized || !session) {
     return (
       <div className="max-w-md mx-auto my-16 px-4">
-        <div className="bg-white dark:bg-slate-900 border border-red-100 dark:border-red-950/20 rounded-3xl p-8 shadow-xl text-center space-y-6 glass">
+        <div className="bg-white dark:bg-slate-900 border border-red-100 dark:border-red-950/20 rounded-3xl p-8 shadow-xl text-center space-y-6">
           <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
             <ShieldAlert className="w-8 h-8" />
           </div>
           <div className="space-y-2">
-            <h2 className="font-heading font-extrabold text-2xl text-gray-950 dark:text-white">
-              Access Denied
-            </h2>
-            <p className="text-sm text-gray-550 dark:text-slate-400">
-              You are not registered as an approved participant for this private swapping room. Only the requester and receiver can join.
-            </p>
+            <h2 className="font-heading font-extrabold text-2xl text-gray-950 dark:text-white">Access Denied</h2>
+            <p className="text-sm text-gray-500">You are not registered as an approved participant for this private room.</p>
           </div>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold rounded-2xl transition-all shadow-md shadow-primary-500/25"
-          >
+          <button onClick={() => navigate('/dashboard')} className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-2xl transition-all shadow-md">
             Return to Dashboard
           </button>
         </div>
@@ -463,145 +496,166 @@ export const SessionPage: React.FC = () => {
     );
   }
 
-  // Expired session screen
-  if (isExpired) {
-    return (
-      <div className="max-w-md mx-auto my-16 px-4">
-        <div className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-950/20 rounded-3xl p-8 shadow-xl text-center space-y-6 glass">
-          <div className="w-16 h-16 bg-amber-100 dark:bg-amber-950/30 text-amber-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
-            <Clock className="w-8 h-8" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="font-heading font-extrabold text-2xl text-gray-950 dark:text-white">
-              Room Expired
-            </h2>
-            <p className="text-sm text-gray-550 dark:text-slate-400">
-              This learning room has completed its 24-hour availability window and has expired. You can propose a new swap to start another session.
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/requests')}
-            className="w-full py-3 bg-gray-50 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-white font-bold rounded-2xl transition-all"
-          >
-            Manage Swap Requests
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Get active roles
-  const isLearner = profile?.id === session.learner_id;
-  const partnerProfile = isLearner ? mentorProfile : learnerProfile;
-  const selfProfile = isLearner ? learnerProfile : mentorProfile;
+  const isUserMentor = profile.id === session.mentor_id;
+  const partnerProfile = isUserMentor ? learnerProfile : mentorProfile;
+  const partnerName = partnerProfile?.full_name || 'Learning Partner';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col space-y-6 h-[calc(100vh-5rem)]">
       
       {/* Session Header Panel */}
-      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 glass">
+      <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
           <div className="p-3 bg-gradient-to-tr from-primary-500 to-secondary-500 text-white rounded-xl shadow-md">
             <Video className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center space-x-2.5">
-              <h1 className="font-heading font-bold text-lg text-gray-900 dark:text-white">
+              <h1 className="font-heading font-bold text-lg text-gray-950 dark:text-white">
                 Live SkillSwap Workspace
               </h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40">
-                Connected
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                session.status === 'completed'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400'
+                  : session.status === 'active'
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-450 animate-pulse'
+                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400'
+              } border`}>
+                {session.status}
               </span>
             </div>
             
-            {/* Partners info */}
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" />
-              <span>
-                Meeting with: <span className="font-semibold text-gray-700 dark:text-slate-350">{partnerProfile?.full_name || 'Partner'}</span>
-              </span>
+              <span>Partner: <span className="font-semibold text-gray-800 dark:text-slate-200">{partnerName}</span></span>
               <span className="mx-1">•</span>
-              <span>
-                Role: <span className="font-semibold text-primary-500">{isLearner ? 'Learner' : 'Mentor'}</span>
-              </span>
+              <span>Role: <span className="font-semibold text-primary-500">{isUserMentor ? 'Mentor' : 'Learner'}</span></span>
             </p>
           </div>
         </div>
 
-        {/* Header Controls: Time left, Copy Link, Leave Room */}
-        <div className="flex flex-wrap items-center gap-3 self-end md:self-auto">
-          {/* Expiry Counter */}
-          <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-950/30 rounded-xl text-xs font-semibold">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Time Left: {timeLeft}</span>
-          </div>
+        {/* Header Controls */}
+        <div className="flex flex-wrap items-center gap-3">
+          {session.status === 'active' && (
+            <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-450 border border-emerald-100 dark:border-emerald-950/30 rounded-xl text-xs font-black">
+              <Clock className="w-3.5 h-3.5 animate-spin" />
+              <span>Timer: {formatTimer(elapsedTime)}</span>
+            </div>
+          )}
 
-          {/* Copy Link Button */}
+          {isUserMentor && session.status === 'scheduled' && (
+            <button
+              onClick={handleStartSession}
+              className="flex items-center space-x-1 px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/10 cursor-pointer"
+            >
+              <Play className="w-3.5 h-3.5" />
+              <span>Start Session</span>
+            </button>
+          )}
+
+          {isUserMentor && session.status === 'active' && (
+            <button
+              onClick={handleCompleteSession}
+              className="flex items-center space-x-1 px-4 py-1.5 bg-blue-500 hover:bg-blue-650 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/10 cursor-pointer"
+            >
+              <CheckCircle className="w-3.5 h-3.5" />
+              <span>Complete Session</span>
+            </button>
+          )}
+
           <button
             onClick={copySessionLink}
-            className="flex items-center space-x-1 px-3 py-1.5 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-200 rounded-xl text-xs font-bold transition-all border border-gray-100 dark:border-slate-750"
-            title="Copy meeting link to share with partner"
+            className="flex items-center space-x-1 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-xl text-xs font-bold border border-gray-150 dark:border-slate-700 transition-all cursor-pointer"
           >
-            {copiedLink ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-emerald-500">Copied!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy Link</span>
-              </>
-            )}
+            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
           </button>
 
-          {/* Leave Button */}
           <button
-            onClick={() => navigate('/requests')}
-            className="flex items-center space-x-1 px-4 py-1.5 bg-red-50 dark:bg-red-950/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-xl text-xs font-bold transition-all"
+            onClick={() => navigate('/sessions')}
+            className="flex items-center space-x-1 px-4 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 text-red-500 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Leave Room</span>
+            <span>Exit Dashboard</span>
           </button>
         </div>
+      </div>
+
+      {/* Progress Tracker Slider (Always Visible) */}
+      <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex-1 space-y-1">
+          <div className="flex justify-between items-center text-xs">
+            <span className="font-bold text-gray-800 dark:text-slate-200 flex items-center gap-1.5">
+              <BookOpen className="w-4 h-4 text-primary-500" /> Learning Progress Tracker
+            </span>
+            <span className="font-black text-primary-500">{progress}% Completed</span>
+          </div>
+          <div className="w-full bg-gray-100 dark:bg-slate-950 h-2.5 rounded-full overflow-hidden border border-gray-200 dark:border-slate-800">
+            <div className="bg-primary-500 h-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+          </div>
+        </div>
+
+        {session.status === 'active' && (
+          <div className="flex items-center space-x-2 shrink-0">
+            <span className="text-[10px] font-bold text-gray-500 dark:text-slate-400">Update (Mentor):</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={progress}
+              onChange={handleProgressChange}
+              disabled={!isUserMentor}
+              className="w-36 accent-primary-500 cursor-pointer disabled:opacity-50"
+            />
+          </div>
+        )}
       </div>
 
       {/* Workspace Body */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
         
-        {/* Left Side: Video Stream Room (2/3 width) */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-inner flex flex-col relative h-[50vh] lg:h-auto min-h-[350px]">
-          {videoActive ? (
+        {/* Left Side: Video call Integration */}
+        <div className="lg:col-span-2 bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-inner flex flex-col relative h-[50vh] lg:h-auto min-h-[350px]">
+          {session.status === 'completed' ? (
+            <div className="flex-1 flex flex-col justify-center items-center text-slate-400 space-y-4 p-8 text-center bg-slate-900/60">
+              <Award className="w-16 h-16 text-amber-500 animate-bounce" />
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-slate-100">Learning Session Completed!</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                  Thank you for participating! Review ratings and feedback have been applied to user profiles. You can close this tab safely.
+                </p>
+              </div>
+            </div>
+          ) : session.status === 'active' ? (
             <iframe
               title="Jitsi Video Conference"
-              src={`https://meet.jit.si/SkillSwap-${roomId}#userInfo.displayName="${selfProfile?.full_name || 'Swapper'}"&config.startWithAudioMuted=true&config.prejoinPageEnabled=false&config.toolbarButtons=["camera","microphone","chat","settings","hangup","desktop","fullscreen","videoquality","filmstrip","raisehand","tileview"]`}
+              src={`https://meet.jit.si/SkillSwap-${roomId}#userInfo.displayName="${profile.full_name || 'User'}"&config.startWithAudioMuted=true&config.prejoinPageEnabled=false`}
               className="w-full h-full border-0"
               allow="camera; microphone; fullscreen; display-capture; autoplay"
             />
           ) : (
-            <div className="flex-1 flex flex-col justify-center items-center text-slate-400 space-y-4">
-              <div className="p-4 bg-slate-850 rounded-full">
-                <Video className="w-12 h-12 text-slate-500" />
+            <div className="flex-1 flex flex-col justify-center items-center text-slate-400 space-y-4 p-8 text-center bg-slate-900/40">
+              <Clock className="w-12 h-12 text-amber-500" />
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-slate-200">Scheduled Learning Room</h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                  {isUserMentor
+                    ? "Click the 'Start Session' button above to initialize Jitsi meeting streams for your learner."
+                    : "Waiting for your mentor to start the session. Once started, the video stream will load here automatically."}
+                </p>
               </div>
-              <p className="font-semibold">Video Session Paused</p>
-              <button
-                onClick={() => setVideoActive(true)}
-                className="px-4 py-2 bg-primary-500 text-white rounded-xl font-semibold text-sm"
-              >
-                Re-initialize Call
-              </button>
             </div>
           )}
         </div>
 
-        {/* Right Side: Chat & Collaboration Hub (1/3 width) */}
-        <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl flex flex-col shadow-sm min-h-[350px] lg:h-auto overflow-hidden">
-          
+        {/* Right Side: Chat & Scratch Pad Hub */}
+        <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl flex flex-col shadow-sm min-h-[350px] lg:h-auto overflow-hidden">
           {/* Tab selector */}
           <div className="flex border-b border-gray-150 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50">
             <button
               onClick={() => setActiveTab('chat')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-3.5 text-sm font-semibold border-b-2 transition-all ${
+              className={`flex-1 flex items-center justify-center space-x-2 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
                 activeTab === 'chat'
                   ? 'border-primary-500 text-primary-500 bg-white dark:bg-slate-900'
                   : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-350'
@@ -609,83 +663,91 @@ export const SessionPage: React.FC = () => {
             >
               <MessageSquare className="w-4 h-4" />
               <span>Chat</span>
-              {chatMessages.length > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 dark:bg-primary-950/45 text-primary-500">
-                  {chatMessages.length}
-                </span>
-              )}
             </button>
             <button
               onClick={() => setActiveTab('notes')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-3.5 text-sm font-semibold border-b-2 transition-all ${
+              className={`flex-1 flex items-center justify-center space-x-2 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
                 activeTab === 'notes'
                   ? 'border-primary-500 text-primary-500 bg-white dark:bg-slate-900'
                   : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-350'
               }`}
             >
               <FileText className="w-4 h-4" />
-              <span>Shared Pad</span>
-              {notes && (
-                <span className="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
-              )}
+              <span>Study Notes</span>
             </button>
           </div>
 
-          {/* Tab Content Panel */}
-          <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900">
-            
-            {/* CHAT TAB */}
+          {/* Panel content */}
+          <div className="flex-1 flex flex-col min-h-0">
             {activeTab === 'chat' && (
               <>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {chatMessages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 space-y-2">
-                      <MessageSquare className="w-10 h-10 text-gray-300" />
-                      <div>
-                        <h4 className="font-semibold text-sm text-gray-600 dark:text-slate-350">Private Chat Room</h4>
-                        <p className="text-xs text-gray-400 mt-0.5 max-w-[200px]">
-                          Messages sent here are encrypted and visible only to you and your partner.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    chatMessages.map((msg) => {
-                      const isMe = msg.sender_id === profile.id;
-                      return (
-                        <div
-                          key={msg.id}
-                          className={`flex items-start gap-2.5 ${isMe ? 'flex-row-reverse' : ''}`}
-                        >
-                          <img
-                            src={msg.sender_avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${msg.sender_name}`}
-                            alt={msg.sender_name}
-                            className="w-8 h-8 rounded-full border border-gray-100 shrink-0 object-cover mt-0.5"
-                          />
-                          <div className={`flex flex-col max-w-[75%] ${isMe ? 'items-end' : ''}`}>
-                            <span className="text-[10px] text-gray-450 dark:text-slate-450 font-medium px-1">
-                              {isMe ? 'You' : msg.sender_name} • {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                            <div
-                              className={`mt-0.5 px-3.5 py-2 rounded-2xl text-xs leading-relaxed shadow-sm font-sans ${
-                                isMe
-                                  ? 'bg-primary-500 text-white rounded-tr-none'
-                                  : 'bg-gray-105 dark:bg-slate-800 text-gray-800 dark:text-slate-200 rounded-tl-none border border-gray-100 dark:border-slate-750'
-                              }`}
-                            >
-                              {msg.content}
-                            </div>
+                {/* Chat window */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+                  {chatMessages.map((msg) => {
+                    const isMe = msg.sender_id === profile.id;
+                    return (
+                      <div key={msg.id} className={`flex items-start gap-2.5 ${isMe ? 'flex-row-reverse' : ''}`}>
+                        <img
+                          src={msg.sender_avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${msg.sender_name}`}
+                          alt={msg.sender_name}
+                          className="w-8 h-8 rounded-full border border-gray-150 shrink-0 mt-0.5"
+                        />
+                        <div className={`flex flex-col max-w-[75%] ${isMe ? 'items-end' : ''}`}>
+                          <span className="text-[9px] text-gray-400 dark:text-slate-500 px-1 font-semibold">
+                            {isMe ? 'You' : msg.sender_name} • {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <div className={`mt-0.5 px-3 py-2 rounded-2xl text-xs leading-relaxed shadow-sm ${
+                            isMe ? 'bg-primary-500 text-white rounded-tr-none' : 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-200 rounded-tl-none border border-gray-150 dark:border-slate-750'
+                          }`}>
+                            {renderChatMessageContent(msg.content)}
                           </div>
                         </div>
-                      );
-                    })
-                  )}
+                      </div>
+                    );
+                  })}
                   <div ref={chatEndRef} />
                 </div>
 
-                {/* Input box */}
+                {/* Chat attachments drawer */}
+                <div className="flex items-center space-x-1.5 px-3 py-1.5 border-t border-gray-150 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-900/30">
+                  <button
+                    onClick={() => handleSendMockFile('Project_Outline.pdf', 'File')}
+                    className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-350 cursor-pointer"
+                    title="Share PDF Document"
+                  >
+                    <Paperclip className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleSendMockFile('dashboard_design.png', 'Image')}
+                    className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-350 cursor-pointer"
+                    title="Share Design Screenshot"
+                  >
+                    <Image className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={handleSendMockResource}
+                    className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-350 cursor-pointer"
+                    title="Share External Reference link"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setShowCodeInput(true)}
+                    className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-350 cursor-pointer"
+                    title="Share Code Block"
+                  >
+                    <Code className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Input panel */}
                 <form
-                  onSubmit={handleSendMessage}
-                  className="p-3 border-t border-gray-150 dark:border-slate-800 bg-gray-50/40 dark:bg-slate-900/40 flex items-center space-x-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendChatMessage(newMessage);
+                    setNewMessage('');
+                  }}
+                  className="p-3 border-t border-gray-150 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 flex items-center space-x-2"
                 >
                   <input
                     type="text"
@@ -696,7 +758,7 @@ export const SessionPage: React.FC = () => {
                   />
                   <button
                     type="submit"
-                    className="p-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl transition-all shadow-md shadow-primary-500/10 shrink-0"
+                    className="p-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl transition-all shadow-md shadow-primary-500/10 shrink-0 cursor-pointer"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -704,41 +766,122 @@ export const SessionPage: React.FC = () => {
               </>
             )}
 
-            {/* NOTES TAB (Autosaving scratch pad) */}
             {activeTab === 'notes' && (
               <div className="flex-1 flex flex-col p-4 space-y-3 h-full">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1.5 text-xs text-gray-500 dark:text-slate-400">
-                    <BookOpen className="w-3.5 h-3.5 text-primary-500" />
-                    <span className="font-semibold">Collaborative Study Notepad</span>
-                  </div>
-                  <div className="text-[10px] text-gray-400">
-                    {isSavingNotes ? (
-                      <span className="flex items-center text-primary-500 font-medium animate-pulse">
-                        <Loader2 className="w-2.5 h-2.5 mr-1 animate-spin" /> Saving...
-                      </span>
-                    ) : (
-                      <span className="text-emerald-500 font-semibold">Saved locally</span>
-                    )}
-                  </div>
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span className="font-bold flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5 text-primary-500" /> Study Notepad</span>
+                  <span>{isSavingNotes ? 'Saving...' : 'Saved'}</span>
                 </div>
-
                 <textarea
                   value={notes}
                   onChange={handleNotesChange}
-                  placeholder="Draft project outlines, code snippets, reference URLs, and homework goals here during your session. This notepad updates in real time for both participants."
-                  className="flex-1 w-full bg-gray-50/50 dark:bg-slate-950 border border-gray-200 dark:border-slate-850 rounded-xl p-3.5 text-xs font-mono text-gray-800 dark:text-slate-350 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none leading-relaxed"
+                  placeholder="Draft outlines, reference resources, shared links, and code blocks here during the swap."
+                  className="flex-1 w-full bg-gray-55/30 dark:bg-slate-950 border border-gray-200 dark:border-slate-850 rounded-xl p-3.5 text-xs font-mono text-gray-800 dark:text-slate-350 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none leading-relaxed"
                 />
               </div>
             )}
-
           </div>
-
         </div>
-
       </div>
+
+      {/* Code Sharing input overlay modal */}
+      {showCodeInput && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <form onSubmit={handleSendCode} className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl p-5 max-w-lg w-full space-y-4 shadow-2xl">
+            <h3 className="font-heading font-black text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
+              <Code className="w-4.5 h-4.5 text-primary-500" /> Share Code Snippet
+            </h3>
+            <textarea
+              value={codeContent}
+              onChange={(e) => setCodeContent(e.target.value)}
+              placeholder={`// Write your code snippet here...\nfunction hello() {\n  console.log("Hello, Swapper!");\n}`}
+              rows={8}
+              className="w-full bg-gray-50 dark:bg-slate-950 border border-gray-250 dark:border-slate-800 rounded-xl p-3.5 text-xs font-mono text-gray-800 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
+            <div className="flex justify-end space-x-2">
+              <button
+                type="button"
+                onClick={() => setShowCodeInput(false)}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-gray-700 dark:text-slate-200 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md shadow-primary-500/10"
+              >
+                Send Code
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Post-Session Feedback & Review Modal */}
+      {isFeedbackOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <form onSubmit={submitFeedback} className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl text-center">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center mx-auto">
+              <CheckCircle className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-1">
+              <h2 className="font-heading font-black text-xl text-gray-950 dark:text-white">Session Completed!</h2>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                Please leave feedback on your swap learning experience with **{partnerName}**.
+              </p>
+            </div>
+
+            {/* Stars Selector */}
+            <div className="flex justify-center space-x-1.5 py-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRatingScore(star)}
+                  className="focus:outline-none transition-transform hover:scale-110 cursor-pointer"
+                >
+                  <Star
+                    className={`w-8 h-8 ${
+                      star <= ratingScore ? 'text-amber-500 fill-amber-500' : 'text-gray-300 dark:text-slate-700'
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+
+            {/* Qualitative textarea */}
+            <div className="space-y-1 text-left">
+              <label className="text-[10px] font-extrabold uppercase text-gray-500 dark:text-slate-400 tracking-wider">
+                Feedback Comments
+              </label>
+              <textarea
+                value={feedbackComment}
+                onChange={(e) => setFeedbackComment(e.target.value)}
+                placeholder="Share what went well or how they can improve..."
+                rows={3}
+                required
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:text-white"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submittingFeedback}
+              className="w-full py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer shadow-md shadow-primary-500/10 disabled:opacity-50"
+            >
+              {submittingFeedback ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <span>Submit Feedback & Complete Profile Stats</span>
+              )}
+            </button>
+          </form>
+        </div>
+      )}
 
     </div>
   );
 };
+
 export default SessionPage;

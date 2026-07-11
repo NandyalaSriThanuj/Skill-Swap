@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { notificationService } from '../lib/notificationService';
+import { sessionService } from '../lib/sessionService';
 import type { Profile, SwapRequest, Message, LearningSession } from '../types';
 import { 
   Inbox, 
@@ -199,32 +200,25 @@ export const RequestsPage: React.FC = () => {
         // If approved, trigger room creation & notifications in mock mode
         if (newStatus === 'approved' && oldReq.status !== 'approved') {
           const roomId = `room-${Math.random().toString(36).substr(2, 9)}`;
-          const sessionLink = `${window.location.origin}/session/${roomId}`;
-          const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString(); // 24 hours expiry
+          const sessionLink = `https://meet.jit.si/SkillSwap-${roomId}`;
           
-          const newSession: LearningSession = {
-            id: `sess-${Math.random().toString(36).substr(2, 9)}`,
+          await sessionService.createSession({
             room_id: roomId,
             learner_id: oldReq.sender_id,
             mentor_id: oldReq.receiver_id,
             swap_request_id: oldReq.id,
             session_link: sessionLink,
-            status: 'active',
-            expires_at: expiresAt,
-            created_at: new Date().toISOString()
-          };
-
-          // Save session
-          const allSessions = JSON.parse(localStorage.getItem('skillswap-mock-sessions') || '[]');
-          allSessions.push(newSession);
-          localStorage.setItem('skillswap-mock-sessions', JSON.stringify(allSessions));
+            teaching_skill: oldReq.skill_wanted,
+            learning_skill: oldReq.skill_offered,
+            status: 'scheduled'
+          });
 
           // Create Notifications
           try {
             await notificationService.createNotification(oldReq.sender_id, {
               type: 'swap',
               title: 'Swap Request Approved!',
-              message: `${receiverName} has approved your swap request. Click to join the learning room!`,
+              message: `${receiverName} has approved your swap request. Joint learning session is scheduled!`,
               priority: 'High',
               action_url: `/session/${roomId}`
             });
@@ -232,7 +226,7 @@ export const RequestsPage: React.FC = () => {
             await notificationService.createNotification(oldReq.receiver_id, {
               type: 'swap',
               title: 'Learning Room Provisioned!',
-              message: `You approved ${senderName}'s request. Your joint learning session is active.`,
+              message: `You approved ${senderName}'s request. Your joint learning session is scheduled.`,
               priority: 'Medium',
               action_url: `/session/${roomId}`
             });
@@ -264,17 +258,47 @@ export const RequestsPage: React.FC = () => {
         
         if (error) throw error;
 
-        // If approved, trigger notifications (Supabase trigger also runs, but we add detail / support rejection notification here)
+        // If approved, trigger live room creation & notifications
         if (newStatus === 'approved') {
-          // Check if session got created by trigger or if we should notify
-          // Since the DB trigger 'notify_on_session_created' handles creating notifications upon learning_sessions INSERT,
-          // when we approve a swap request, the backend/client will insert a learning session.
-          // Let's check if the client creates the learning session. Wait, does the client create the session, or does a database trigger create it?
-          // Let's check supabase_schema.sql if there is a trigger to create a learning session upon approval.
-          // Wait, let's search in supabase_schema.sql for 'insert into public.learning_sessions' or similar.
+          const roomId = `room-${Math.random().toString(36).substr(2, 9)}`;
+          const sessionLink = `https://meet.jit.si/SkillSwap-${roomId}`;
+
+          await sessionService.createSession({
+            room_id: roomId,
+            learner_id: targetReq.sender_id,
+            mentor_id: targetReq.receiver_id,
+            swap_request_id: targetReq.id,
+            session_link: sessionLink,
+            teaching_skill: targetReq.skill_wanted,
+            learning_skill: targetReq.skill_offered,
+            status: 'scheduled'
+          });
+
+          try {
+            await notificationService.createNotification({
+              user_id: targetReq.sender_id,
+              type: 'swap',
+              title: 'Swap Request Approved!',
+              message: `${receiverName} has approved your swap request. Learning session scheduled.`,
+              priority: 'High',
+              action_url: `/session/${roomId}`
+            });
+
+            await notificationService.createNotification({
+              user_id: targetReq.receiver_id,
+              type: 'swap',
+              title: 'Learning Room Provisioned!',
+              message: `You approved ${senderName}'s request. Your joint learning session is scheduled.`,
+              priority: 'Medium',
+              action_url: `/session/${roomId}`
+            });
+          } catch (notifErr) {
+            console.error('Failed to create live swap status notifications:', notifErr);
+          }
         } else if (newStatus === 'rejected') {
           try {
-            await notificationService.createNotification(targetReq.sender_id, {
+            await notificationService.createNotification({
+              user_id: targetReq.sender_id,
               type: 'swap',
               title: 'Swap Request Declined',
               message: `${receiverName} declined your swap request to exchange "${targetReq.skill_offered}" for "${targetReq.skill_wanted}".`,
