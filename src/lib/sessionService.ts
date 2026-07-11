@@ -24,18 +24,39 @@ export const sessionService = {
     }
 
     try {
-      const { data, error } = await supabase
+      // 1. Fetch sessions
+      const { data: sessions, error } = await supabase
         .from('learning_sessions')
-        .select(`
-          *,
-          learner:profiles!learning_sessions_learner_id_fkey(id, full_name, email, avatar_url),
-          mentor:profiles!learning_sessions_mentor_id_fkey(id, full_name, email, avatar_url)
-        `)
+        .select('*')
         .or(`learner_id.eq.${userId},mentor_id.eq.${userId}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      if (!sessions || sessions.length === 0) return [];
+
+      // 2. Collect unique profile IDs
+      const profileIds = new Set<string>();
+      sessions.forEach(s => {
+        if (s.learner_id) profileIds.add(s.learner_id);
+        if (s.mentor_id) profileIds.add(s.mentor_id);
+      });
+
+      // 3. Fetch profiles
+      const { data: profiles, error: pError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, rating, completed_sessions, teaching_hours, learning_hours')
+        .in('id', Array.from(profileIds));
+
+      if (pError) throw pError;
+
+      // 4. Map profiles to sessions
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      
+      return sessions.map(s => ({
+        ...s,
+        learner: profileMap.get(s.learner_id) || null,
+        mentor: profileMap.get(s.mentor_id) || null
+      }));
     } catch (err) {
       console.error('Error fetching sessions:', err);
       throw err;
@@ -61,18 +82,31 @@ export const sessionService = {
     }
 
     try {
-      const { data, error } = await supabase
+      // 1. Fetch session
+      const { data: session, error } = await supabase
         .from('learning_sessions')
-        .select(`
-          *,
-          learner:profiles!learning_sessions_learner_id_fkey(id, full_name, email, avatar_url, rating, completed_sessions, teaching_hours, learning_hours),
-          mentor:profiles!learning_sessions_mentor_id_fkey(id, full_name, email, avatar_url, rating, completed_sessions, teaching_hours, learning_hours)
-        `)
+        .select('*')
         .eq('room_id', roomId)
         .maybeSingle();
 
       if (error) throw error;
-      return data;
+      if (!session) return null;
+
+      // 2. Fetch profiles
+      const { data: profiles, error: pError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, rating, completed_sessions, teaching_hours, learning_hours')
+        .in('id', [session.learner_id, session.mentor_id]);
+
+      if (pError) throw pError;
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      return {
+        ...session,
+        learner: profileMap.get(session.learner_id) || null,
+        mentor: profileMap.get(session.mentor_id) || null
+      };
     } catch (err) {
       console.error('Error fetching session details:', err);
       throw err;
