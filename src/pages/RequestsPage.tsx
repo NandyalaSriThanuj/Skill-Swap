@@ -590,7 +590,7 @@ export const RequestsPage: React.FC = () => {
               </div>
 
               {/* Chat Send Input */}
-              <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-905">
+              <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-100 dark:border-slate-850 bg-gray-50/50 dark:bg-slate-900">
                 <div className="relative">
                   <input
                     type="text"
@@ -598,7 +598,7 @@ export const RequestsPage: React.FC = () => {
                     value={newMsgContent}
                     onChange={(e) => setNewMsgContent(e.target.value)}
                     placeholder="Type a message..."
-                    className="w-full pl-3 pr-10 py-2.5 bg-white dark:bg-slate-850 border border-gray-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/15 focus:border-primary-500 dark:text-white"
+                    className="w-full pl-3 pr-10 py-2.5 bg-white dark:bg-slate-800 border border-gray-205 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/15 focus:border-primary-500 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-400"
                   />
                   <button
                     type="submit"

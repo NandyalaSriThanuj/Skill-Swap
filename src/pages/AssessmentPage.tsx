@@ -435,36 +435,7 @@ const AssessmentPageInner: React.FC<{ initialSession: QualificationSession }> = 
           </div>
         </div>
 
-        {/* Global Key Config & Status Indicators */}
-        <div className="flex items-center space-x-3 shrink-0">
-          <button
-            onClick={() => setShowKeyModal(true)}
-            className={`flex items-center space-x-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-              apiKey 
-                ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10' 
-                : isSupabaseConfigured
-                ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10'
-                : 'bg-amber-500/5 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10'
-            }`}
-          >
-            {apiKey ? (
-              <>
-                <Key className="w-3.5 h-3.5 text-emerald-550 animate-pulse" />
-                <span>Custom Groq Key Active</span>
-              </>
-            ) : isSupabaseConfigured ? (
-              <>
-                <CheckCircle className="w-3.5 h-3.5 text-emerald-550" />
-                <span>Groq AI Active (Default)</span>
-              </>
-            ) : (
-              <>
-                <Key className="w-3.5 h-3.5" />
-                <span>Configure Groq Key</span>
-              </>
-            )}
-          </button>
-        </div>
+
       </div>
 
       {/* Main Area */}
