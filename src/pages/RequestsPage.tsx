@@ -542,18 +542,47 @@ export const RequestsPage: React.FC = () => {
 
                     {/* Chat button for Approved swaps */}
                     {req.status === 'approved' && (() => {
-                      const reqSession = sessions.find(s => s.swap_request_id === req.id && s.status === 'active');
+                      const reqSession = sessions.find(s => s.swap_request_id === req.id && (s.status === 'active' || s.status === 'scheduled'));
+                      
+                      const handleLaunchRoom = async () => {
+                        if (reqSession) {
+                          navigate(`/session/${reqSession.room_id}`);
+                        } else {
+                          // Self-healing backfill: create the session on the fly!
+                          const roomId = `room-${Math.random().toString(36).substr(2, 9)}`;
+                          const sessionLink = `https://meet.jit.si/SkillSwap-${roomId}`;
+                          
+                          setLoading(true);
+                          try {
+                            await sessionService.createSession({
+                              room_id: roomId,
+                              learner_id: req.sender_id,
+                              mentor_id: req.receiver_id,
+                              swap_request_id: req.id,
+                              session_link: sessionLink,
+                              teaching_skill: req.skill_wanted,
+                              learning_skill: req.skill_offered,
+                              status: 'scheduled'
+                            });
+                            
+                            navigate(`/session/${roomId}`);
+                          } catch (err) {
+                            console.error('Error in self-healing session creation:', err);
+                          } finally {
+                            setLoading(false);
+                          }
+                        }
+                      };
+
                       return (
                         <>
-                          {reqSession && (
-                            <button
-                              onClick={() => navigate(`/session/${reqSession.room_id}`)}
-                              className="px-4.5 py-2 text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-650 rounded-xl transition-all flex items-center space-x-1.5 shadow-md shadow-emerald-500/10 cursor-pointer animate-pulse-slow"
-                            >
-                              <Video className="w-3.5 h-3.5" />
-                              <span>Launch Learning Room</span>
-                            </button>
-                          )}
+                          <button
+                            onClick={handleLaunchRoom}
+                            className="px-4.5 py-2 text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-650 rounded-xl transition-all flex items-center space-x-1.5 shadow-md shadow-emerald-500/10 cursor-pointer animate-pulse-slow"
+                          >
+                            <Video className="w-3.5 h-3.5" />
+                            <span>Launch Learning Room</span>
+                          </button>
                           <button
                             onClick={() => handleUpdateStatus(req.id, 'completed')}
                             className="px-4 py-2 text-xs font-bold text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/20 rounded-xl transition-all cursor-pointer"

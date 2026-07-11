@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { sessionService } from '../lib/sessionService';
+import { supabase } from '../lib/supabaseClient';
 import {
   Calendar,
   Video,
@@ -18,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export const MySessionsPage: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, isMock } = useAuth();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,53 @@ export const MySessionsPage: React.FC = () => {
       if (!profile) return;
       try {
         setLoading(true);
-        const data = await sessionService.fetchSessions(profile.id);
+        // 1. Fetch current sessions
+        let data = await sessionService.fetchSessions(profile.id);
+
+        // 2. Self-healing backfill: find approved requests without sessions and create them on the fly
+        let approvedRequests: any[] = [];
+        if (isMock) {
+          const allReqs = JSON.parse(localStorage.getItem('skillswap-mock-requests') || '[]');
+          approvedRequests = allReqs.filter(
+            (r: any) => r.status === 'approved' && (r.sender_id === profile.id || r.receiver_id === profile.id)
+          );
+        } else {
+          const { data: reqs } = await supabase
+            .from('swap_requests')
+            .select('*')
+            .eq('status', 'approved')
+            .or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`);
+          approvedRequests = reqs || [];
+        }
+
+        // Check if any approved request does not have a session
+        const existingRequestIds = new Set(data.map(s => s.swap_request_id));
+        let createdNewSession = false;
+
+        for (const req of approvedRequests) {
+          if (!existingRequestIds.has(req.id)) {
+            const roomId = `room-${Math.random().toString(36).substr(2, 9)}`;
+            const sessionLink = `https://meet.jit.si/SkillSwap-${roomId}`;
+            
+            await sessionService.createSession({
+              room_id: roomId,
+              learner_id: req.sender_id,
+              mentor_id: req.receiver_id,
+              swap_request_id: req.id,
+              session_link: sessionLink,
+              teaching_skill: req.skill_wanted,
+              learning_skill: req.skill_offered,
+              status: 'scheduled'
+            });
+            createdNewSession = true;
+          }
+        }
+
+        // Refetch sessions if any were created
+        if (createdNewSession) {
+          data = await sessionService.fetchSessions(profile.id);
+        }
+
         setSessions(data);
       } catch (err) {
         console.error('Error fetching sessions:', err);
@@ -40,7 +87,7 @@ export const MySessionsPage: React.FC = () => {
     };
 
     loadSessions();
-  }, [profile]);
+  }, [profile, isMock]);
 
   if (!profile) return null;
 
