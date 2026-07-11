@@ -415,7 +415,7 @@ export const ProfilePage: React.FC = () => {
         <div className="space-y-6 animate-in fade-in duration-300">
           
           {/* 1. Main Header Profile Card */}
-          <div className="bg-[#0b1329] dark:bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl relative overflow-hidden text-white">
+          <div className="bg-white dark:bg-slate-900/80 border border-gray-150 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm dark:shadow-2xl relative overflow-hidden text-gray-900 dark:text-white">
             <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-primary-600/10 to-transparent rounded-full blur-3xl -z-1"></div>
             
             <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-6 relative z-10">
@@ -424,7 +424,7 @@ export const ProfilePage: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 flex-1">
                 {/* Profile Photo */}
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 rounded-full border-2 border-primary-500/30 p-0.5 bg-slate-950/80 overflow-hidden shadow-inner">
+                  <div className="w-20 h-20 rounded-full border-2 border-primary-500/30 p-0.5 bg-gray-100 dark:bg-slate-950/80 overflow-hidden shadow-inner">
                     <img
                       src={viewedProfile.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${viewedProfile.username || 'default'}`}
                       alt="Avatar"
@@ -432,14 +432,14 @@ export const ProfilePage: React.FC = () => {
                     />
                   </div>
                   {/* Status Indicator dot */}
-                  <span className={`absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full border-2 border-[#0b1329] dark:border-slate-900 ${
+                  <span className={`absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-slate-900 ${
                     viewedProfile.availability === 'available' ? 'bg-emerald-500' : viewedProfile.availability === 'busy' ? 'bg-amber-500' : 'bg-gray-500'
                   }`} title={`Status: ${viewedProfile.availability}`}></span>
                 </div>
 
                 <div className="space-y-2 flex-1 min-w-0">
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                    <h1 className="font-heading font-extrabold text-xl sm:text-2xl text-white truncate leading-none">
+                    <h1 className="font-heading font-extrabold text-xl sm:text-2xl text-gray-900 dark:text-white truncate leading-none">
                       {viewedProfile.full_name || 'Nandyala Sri thanuj'}
                     </h1>
                     {verifiedSkillsCount > 0 && (
@@ -456,17 +456,17 @@ export const ProfilePage: React.FC = () => {
                     </div>
                   )}
 
-                  <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
+                  <p className="text-xs text-gray-600 dark:text-slate-300 leading-relaxed max-w-xl">
                     {viewedProfile.bio || 'Excited to share skills'}
                   </p>
 
-                  <div className="flex flex-wrap justify-center sm:justify-start gap-y-1 gap-x-3 text-[11px] text-slate-400 font-semibold">
+                  <div className="flex flex-wrap justify-center sm:justify-start gap-y-1 gap-x-3 text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
                     <div className="flex items-center">
-                      <MapPin className="w-3.5 h-3.5 mr-1 text-slate-500" />
+                      <MapPin className="w-3.5 h-3.5 mr-1 text-gray-400 dark:text-slate-500" />
                       <span>{viewedProfile.location || 'Hyderabad, Telangana'}</span>
                     </div>
                     <div className="flex items-center">
-                      <Calendar className="w-3.5 h-3.5 mr-1 text-slate-500" />
+                      <Calendar className="w-3.5 h-3.5 mr-1 text-gray-400 dark:text-slate-500" />
                       <span>Joined {new Date(viewedProfile.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
@@ -495,30 +495,30 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* Certificate Widget */}
-              <div className="shrink-0 w-full lg:w-72 bg-slate-950/40 dark:bg-slate-950/60 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between min-h-[130px] relative overflow-hidden">
+              <div className="shrink-0 w-full lg:w-72 bg-gray-50/50 dark:bg-slate-950/60 border border-gray-150 dark:border-slate-800/80 rounded-xl p-4 flex flex-col justify-between min-h-[130px] relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-bl-full -z-1"></div>
                 {primaryPassedSession ? (
                   <>
                     <div className="flex items-start justify-between gap-2.5 mb-1.5">
                       <div className="space-y-0.5">
-                        <h4 className="font-extrabold text-xs text-white">AI Verified Mentor</h4>
-                        <p className="text-[10px] text-slate-400 leading-normal">
+                        <h4 className="font-extrabold text-xs text-gray-900 dark:text-white">AI Verified Mentor</h4>
+                        <p className="text-[10px] text-gray-500 dark:text-slate-400 leading-normal">
                           Completed AI assessment.
                         </p>
                       </div>
                       <Award className="w-8 h-8 text-blue-500 shrink-0" />
                     </div>
                     
-                    <div className="border-t border-slate-800/60 pt-2 mt-2 flex flex-col gap-1 text-[9px] font-semibold text-slate-450">
+                    <div className="border-t border-gray-150 dark:border-slate-800/60 pt-2 mt-2 flex flex-col gap-1 text-[9px] font-semibold text-gray-500 dark:text-slate-450">
                       <div className="flex justify-between">
                         <span>ID</span>
-                        <span className="text-slate-205 font-mono">
+                        <span className="text-gray-700 dark:text-slate-205 font-mono">
                           {`SS-24-${primaryPassedSession.id.slice(0,4).toUpperCase()}-${primaryPassedSession.id.slice(9,13).toUpperCase()}`}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span>Issued</span>
-                        <span className="text-slate-205">
+                        <span className="text-gray-700 dark:text-slate-205">
                           {new Date(primaryPassedSession.updated_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </span>
                       </div>
@@ -537,9 +537,9 @@ export const ProfilePage: React.FC = () => {
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center py-4 space-y-1">
-                    <Award className="w-7 h-7 text-slate-650" />
-                    <h4 className="font-extrabold text-[11px] text-slate-350">Not Certified Yet</h4>
-                    <p className="text-[9px] text-slate-500 max-w-[170px] leading-relaxed">
+                    <Award className="w-7 h-7 text-gray-400 dark:text-slate-650" />
+                    <h4 className="font-extrabold text-[11px] text-gray-700 dark:text-slate-350">Not Certified Yet</h4>
+                    <p className="text-[9px] text-gray-400 dark:text-slate-500 max-w-[170px] leading-relaxed">
                       {isOwner ? "Complete an assessment from your dashboard." : "This user is not certified yet."}
                     </p>
                   </div>
@@ -550,30 +550,30 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           {/* 2. Stats Dashboard Grid */}
-          <div className="bg-[#0b1329] dark:bg-slate-900/60 border border-slate-800 rounded-xl p-2.5 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center divide-x-0 sm:divide-x divide-slate-800/80">
+          <div className="bg-white dark:bg-slate-900/60 border border-gray-150 dark:border-slate-800 rounded-xl p-2.5 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center divide-x-0 sm:divide-x divide-gray-150 dark:divide-slate-800/80 shadow-sm">
             <div className="space-y-0.5 py-1">
-              <div className="text-xl font-black text-blue-400">{verifiedSkillsCount}</div>
-              <div className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">Skills Verified</div>
+              <div className="text-xl font-black text-blue-500 dark:text-blue-400">{verifiedSkillsCount}</div>
+              <div className="text-[9px] text-gray-500 dark:text-slate-450 font-bold uppercase tracking-wider">Skills Verified</div>
             </div>
             <div className="space-y-0.5 py-1">
-              <div className="text-xl font-black text-purple-400">
+              <div className="text-xl font-black text-purple-600 dark:text-purple-400">
                 {isOwner ? `${avgScore > 0 ? avgScore : 0}%` : `${calculatedRating} / 5`}
               </div>
-              <div className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">
+              <div className="text-[9px] text-gray-500 dark:text-slate-450 font-bold uppercase tracking-wider">
                 {isOwner ? 'Average Score' : 'Mentor Rating'}
               </div>
             </div>
             <div className="space-y-0.5 py-1">
-              <div className="text-xl font-black text-blue-400">{completedInterviewsCount}</div>
-              <div className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">Interviews Completed</div>
+              <div className="text-xl font-black text-blue-500 dark:text-blue-400">{completedInterviewsCount}</div>
+              <div className="text-[9px] text-gray-500 dark:text-slate-450 font-bold uppercase tracking-wider">Interviews Completed</div>
             </div>
             <div className="space-y-0.5 py-1">
-              <div className="text-xl font-black text-emerald-400">{badgesCount}</div>
-              <div className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">Badges Earned</div>
+              <div className="text-xl font-black text-emerald-605 dark:text-emerald-400">{badgesCount}</div>
+              <div className="text-[9px] text-gray-500 dark:text-slate-450 font-bold uppercase tracking-wider">Badges Earned</div>
             </div>
             <div className="space-y-0.5 py-1">
-              <div className="text-xl font-black text-amber-500">{activeSwapsCount}</div>
-              <div className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">Active Swaps</div>
+              <div className="text-xl font-black text-amber-600 dark:text-amber-500">{activeSwapsCount}</div>
+              <div className="text-[9px] text-gray-500 dark:text-slate-450 font-bold uppercase tracking-wider">Active Swaps</div>
             </div>
           </div>
 
@@ -584,8 +584,8 @@ export const ProfilePage: React.FC = () => {
             <div className="space-y-6">
               
               {/* Skills I Can Teach */}
-              <div className="bg-[#0b1329] dark:bg-slate-900/60 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4">
-                <h3 className="font-heading font-extrabold text-base text-white flex items-center">
+              <div className="bg-white dark:bg-slate-900/60 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
+                <h3 className="font-heading font-extrabold text-base text-gray-900 dark:text-white flex items-center">
                   <GraduationCap className="w-5 h-5 mr-2 text-primary-500" />
                   Skills I Can Teach
                 </h3>
@@ -594,7 +594,7 @@ export const ProfilePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleOpenSkillSelectModal('teach')}
-                    className="w-full py-2 bg-slate-950/50 border border-dashed border-slate-800 hover:border-primary-500 hover:text-primary-400 text-slate-400 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-all cursor-pointer hover:bg-slate-950/80"
+                    className="w-full py-2 bg-gray-50/50 dark:bg-slate-950/50 border border-gray-200 dark:border-slate-800 hover:border-primary-500 hover:text-primary-500 dark:hover:text-primary-400 text-gray-500 dark:text-slate-400 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-all cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-950/80"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Select Skill to Teach</span>
@@ -606,7 +606,7 @@ export const ProfilePage: React.FC = () => {
                     viewedProfile.skills_teach.map((skill) => (
                       <span
                         key={skill}
-                        className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-primary-500/10 text-primary-400 border border-primary-500/20"
+                        className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-500/20"
                       >
                         {passedSessions.some(s => s.skill_name.toLowerCase() === skill.toLowerCase()) && (
                           <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -616,7 +616,7 @@ export const ProfilePage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleRemoveTeachSkill(skill)}
-                            className="p-0.5 hover:bg-primary-500/20 rounded-full text-slate-400 hover:text-white transition-colors"
+                            className="p-0.5 hover:bg-primary-500/20 rounded-full text-gray-400 dark:text-slate-400 hover:text-red-500 transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -630,8 +630,8 @@ export const ProfilePage: React.FC = () => {
               </div>
  
               {/* Skills I Want to Learn */}
-              <div className="bg-[#0b1329] dark:bg-slate-900/60 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4">
-                <h3 className="font-heading font-extrabold text-base text-white flex items-center">
+              <div className="bg-white dark:bg-slate-900/60 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
+                <h3 className="font-heading font-extrabold text-base text-gray-900 dark:text-white flex items-center">
                   <BookOpen className="w-5 h-5 mr-2 text-blue-400" />
                   Skills I Want to Learn
                 </h3>
@@ -640,7 +640,7 @@ export const ProfilePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleOpenSkillSelectModal('learn')}
-                    className="w-full py-2 bg-slate-950/50 border border-dashed border-slate-800 hover:border-blue-500 hover:text-blue-400 text-slate-400 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-all cursor-pointer hover:bg-slate-950/80"
+                    className="w-full py-2 bg-gray-50/50 dark:bg-slate-950/50 border border-gray-200 dark:border-slate-800 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-gray-500 dark:text-slate-400 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-all cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-950/80"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Select Skill to Learn</span>
@@ -652,14 +652,14 @@ export const ProfilePage: React.FC = () => {
                     viewedProfile.skills_learn.map((skill) => (
                       <span
                         key={skill}
-                        className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                        className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
                       >
                         <span>{skill}</span>
                         {isOwner && (
                           <button
                             type="button"
                             onClick={() => handleRemoveLearnSkill(skill)}
-                            className="p-0.5 hover:bg-blue-500/20 rounded-full text-slate-400 hover:text-white transition-colors"
+                            className="p-0.5 hover:bg-blue-500/20 rounded-full text-gray-400 dark:text-slate-400 hover:text-red-500 transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -675,9 +675,9 @@ export const ProfilePage: React.FC = () => {
             </div>
  
             {/* Column 2: Interview History */}
-            <div className="bg-[#0b1329] dark:bg-slate-900/60 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 flex flex-col justify-between min-h-[380px]">
+            <div className="bg-white dark:bg-slate-900/60 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 flex flex-col justify-between min-h-[380px] shadow-sm">
               <div className="space-y-4">
-                <h3 className="font-heading font-extrabold text-base text-white flex items-center">
+                <h3 className="font-heading font-extrabold text-base text-gray-900 dark:text-white flex items-center">
                   <Activity className="w-5 h-5 mr-2 text-indigo-500" />
                   Interview History
                 </h3>
@@ -689,11 +689,11 @@ export const ProfilePage: React.FC = () => {
                       .filter(session => isOwner || session.status === 'passed')
                       .slice(0, 2)
                       .map((session) => (
-                        <div key={session.id} className="p-4 bg-slate-950/40 border border-slate-800/80 rounded-2xl space-y-3 relative overflow-hidden">
+                        <div key={session.id} className="p-4 bg-gray-50/55 dark:bg-slate-950/40 border border-gray-150 dark:border-slate-800/80 rounded-2xl space-y-3 relative overflow-hidden">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h4 className="font-bold text-sm text-slate-100">{session.skill_name}</h4>
-                              <span className="text-[10px] text-slate-450 flex items-center mt-1">
+                              <h4 className="font-bold text-sm text-gray-900 dark:text-slate-100">{session.skill_name}</h4>
+                              <span className="text-[10px] text-gray-500 dark:text-slate-450 flex items-center mt-1">
                                 <Calendar className="w-3 h-3 mr-1" />
                                 {new Date(session.updated_at).toLocaleDateString()}
                               </span>
@@ -723,7 +723,7 @@ export const ProfilePage: React.FC = () => {
                           </div>
                           
                           {session.badge && (
-                            <div className="flex items-center text-[11px] font-semibold text-slate-350">
+                            <div className="flex items-center text-[11px] font-semibold text-gray-600 dark:text-slate-350">
                               <Award className="w-3.5 h-3.5 mr-1 text-amber-500" />
                               Badge: {session.badge}
                             </div>
@@ -733,7 +733,7 @@ export const ProfilePage: React.FC = () => {
                           {isOwner && session.status === 'passed' && (
                             <button
                               onClick={() => certificateService.generateCertificatePDF(viewedProfile, session)}
-                              className="mt-2 w-full px-3 py-1.5 bg-slate-900 hover:bg-slate-850 text-blue-400 text-[10px] font-bold rounded-lg border border-slate-800 transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                              className="mt-2 w-full px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-950 hover:dark:bg-slate-900 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-lg border border-gray-200 dark:border-slate-800 transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
                             >
                               <Download className="w-3.5 h-3.5" />
                               <span>Download Certificate</span>
@@ -742,7 +742,7 @@ export const ProfilePage: React.FC = () => {
                         </div>
                       ))
                   ) : (
-                    <div className="p-6 bg-slate-950/20 border border-dashed border-slate-800 rounded-2xl text-center py-10 text-xs text-slate-500 italic">
+                    <div className="p-6 bg-gray-55/15 dark:bg-slate-955/20 border border-dashed border-gray-200 dark:border-slate-800 rounded-2xl text-center py-10 text-xs text-slate-500 italic">
                       No interview history recorded.
                     </div>
                   )}
@@ -750,10 +750,10 @@ export const ProfilePage: React.FC = () => {
               </div>
  
               {qualSessions.filter(session => isOwner || session.status === 'passed').length > 2 && (
-                <div className="pt-4 border-t border-slate-800/60 mt-4 text-center">
+                <div className="pt-4 border-t border-gray-150 dark:border-slate-800/60 mt-4 text-center">
                   <button
                     onClick={() => navigate(isOwner ? '/summaries' : '/certificates')}
-                    className="inline-flex items-center text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    className="inline-flex items-center text-xs font-bold text-gray-500 dark:text-slate-400 hover:text-primary-500 dark:hover:text-white transition-colors cursor-pointer"
                   >
                     <span>View All Interviews</span>
                     <ChevronRight className="w-4 h-4 ml-0.5" />
@@ -766,27 +766,27 @@ export const ProfilePage: React.FC = () => {
             <div className="space-y-6">
               
               {/* Personal Information Display */}
-              <div className="bg-[#0b1329] dark:bg-slate-900/60 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4">
-                <h3 className="font-heading font-extrabold text-base text-white">
+              <div className="bg-white dark:bg-slate-900/60 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
+                <h3 className="font-heading font-extrabold text-base text-gray-900 dark:text-white">
                   Personal Information
                 </h3>
                 
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between py-2 border-b border-slate-800/20">
-                    <span className="text-slate-450 font-medium">Full Name</span>
-                    <span className="text-slate-200 font-bold">{viewedProfile.full_name || 'Nandyala Sri Thanuj'}</span>
+                  <div className="flex justify-between py-2 border-b border-gray-150 dark:border-slate-800/20">
+                    <span className="text-gray-500 dark:text-slate-450 font-medium">Full Name</span>
+                    <span className="text-gray-950 dark:text-slate-200 font-bold">{viewedProfile.full_name || 'Nandyala Sri Thanuj'}</span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-slate-800/20">
-                    <span className="text-slate-450 font-medium">Short Bio</span>
-                    <span className="text-slate-200 font-bold truncate max-w-[200px]" title={viewedProfile.bio || ''}>{viewedProfile.bio || 'Excited to share skills'}</span>
+                  <div className="flex justify-between py-2 border-b border-gray-150 dark:border-slate-800/20">
+                    <span className="text-gray-500 dark:text-slate-450 font-medium">Short Bio</span>
+                    <span className="text-gray-950 dark:text-slate-200 font-bold truncate max-w-[200px]" title={viewedProfile.bio || ''}>{viewedProfile.bio || 'Excited to share skills'}</span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-slate-800/20">
-                    <span className="text-slate-450 font-medium">Location</span>
-                    <span className="text-slate-200 font-bold">{viewedProfile.location || 'Hyderabad, Telangana'}</span>
+                  <div className="flex justify-between py-2 border-b border-gray-150 dark:border-slate-800/20">
+                    <span className="text-gray-500 dark:text-slate-450 font-medium">Location</span>
+                    <span className="text-gray-950 dark:text-slate-200 font-bold">{viewedProfile.location || 'Hyderabad, Telangana'}</span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-slate-800/20">
-                    <span className="text-slate-450 font-medium">Availability</span>
-                    <span className="text-slate-200 font-bold capitalize">{viewedProfile.availability.replace('_', ' ')}</span>
+                  <div className="flex justify-between py-2 border-b border-gray-150 dark:border-slate-800/20">
+                    <span className="text-gray-500 dark:text-slate-450 font-medium">Availability</span>
+                    <span className="text-gray-950 dark:text-slate-200 font-bold capitalize">{viewedProfile.availability.replace('_', ' ')}</span>
                   </div>
                 </div>
  
@@ -803,7 +803,7 @@ export const ProfilePage: React.FC = () => {
  
               {/* Action buttons (Swap request) for guest viewer inside Personal Info card column */}
               {!isOwner && (
-                <div className="bg-[#0b1329] dark:bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div className="bg-white dark:bg-slate-900/60 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 space-y-3 shadow-sm">
                   <button
                     onClick={handleOpenSwapModal}
                     className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer transition-colors shadow-md shadow-blue-600/10"
@@ -813,9 +813,9 @@ export const ProfilePage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => navigate('/requests')}
-                    className="w-full py-2.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer transition-colors"
+                    className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-950/80 hover:dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300 font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer transition-colors"
                   >
-                    <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                    <MessageSquare className="w-3.5 h-3.5 text-gray-400 dark:text-slate-400" />
                     <span>Send Message</span>
                   </button>
                 </div>
@@ -1106,15 +1106,15 @@ export const ProfilePage: React.FC = () => {
       {/* Predefined Skill Selection Modal */}
       {isSkillSelectOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#0b1329] border border-slate-800 rounded-3xl p-5 max-w-md w-full space-y-3.5 shadow-2xl relative overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full space-y-3.5 shadow-2xl relative overflow-hidden">
             <button
               onClick={() => setIsSkillSelectOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-4 right-4 text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="font-heading font-extrabold text-base text-white flex items-center">
+            <h3 className="font-heading font-extrabold text-base text-gray-900 dark:text-white flex items-center">
               <Sparkles className="w-4.5 h-4.5 mr-2 text-primary-500" />
               Add Skill to {skillSelectType === 'teach' ? 'Teach' : 'Learn'}
             </h3>
@@ -1127,7 +1127,7 @@ export const ProfilePage: React.FC = () => {
                 });
 
                 return (
-                  <div key={categoryName} className="space-y-2 pb-2 border-b border-slate-800/20 last:border-b-0">
+                  <div key={categoryName} className="space-y-2 pb-2 border-b border-gray-150 dark:border-slate-800/20 last:border-b-0">
                     <h4 className={`text-[10px] font-bold uppercase tracking-wider ${CATEGORY_COLORS[categoryName] || 'text-slate-400'}`}>
                       {categoryName}
                     </h4>
@@ -1136,13 +1136,13 @@ export const ProfilePage: React.FC = () => {
                         <button
                           key={skill}
                           onClick={() => handleAddPredefinedSkill(skill)}
-                          className="px-2.5 py-1 bg-slate-950/50 hover:bg-primary-500/20 border border-slate-800 hover:border-primary-500/50 rounded-lg text-xs text-slate-300 hover:text-white font-semibold transition-all cursor-pointer"
+                          className="px-2.5 py-1 bg-gray-50 hover:bg-primary-500/10 dark:bg-slate-950/50 hover:dark:bg-primary-500/20 border border-gray-200 dark:border-slate-800 hover:border-primary-500/50 rounded-lg text-xs text-gray-700 dark:text-slate-300 hover:text-primary-600 dark:hover:text-white font-semibold transition-all cursor-pointer"
                         >
                           {skill}
                         </button>
                       ))}
                       {availableSkills.length === 0 && (
-                        <span className="text-[10px] text-slate-500 italic">All skills in this category added.</span>
+                        <span className="text-[10px] text-gray-400 dark:text-slate-500 italic">All skills in this category added.</span>
                       )}
                     </div>
                   </div>
