@@ -69,11 +69,15 @@ export interface LearningSession {
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'request_received' | 'request_accepted' | 'message_received' | 'review_received';
+  type: 'interview' | 'swap' | 'match' | 'certificate' | 'profile' | 'system';
   title: string;
-  content: string;
+  message: string;
+  priority: 'High' | 'Medium' | 'Low';
   is_read: boolean;
+  action_url?: string;
   created_at: string;
+  content?: string; // Compatibility alias
+  roomId?: string;  // Compatibility alias
 }
 
 export interface QualificationSession {

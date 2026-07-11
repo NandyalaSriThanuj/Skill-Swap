@@ -5,6 +5,7 @@ import type { Profile, SwapRequest, QualificationSession } from '../types';
 import { SkillCard } from '../components/SkillCard';
 import { qualificationService } from '../lib/qualificationService';
 import { supabase } from '../lib/supabaseClient';
+import { notificationService } from '../lib/notificationService';
 import { 
   Search, 
   Sparkles, 
@@ -128,6 +129,19 @@ export const BrowseSkillsPage: React.FC = () => {
       allRequests.push(newRequest);
       localStorage.setItem('skillswap-mock-requests', JSON.stringify(allRequests));
 
+      // Trigger notification for mock mode
+      try {
+        notificationService.createNotification(selectedTargetProfile.id, {
+          type: 'swap',
+          title: 'New Swap Proposal Received',
+          message: `${profile?.full_name || 'A swapper'} sent you a swap proposal: offering "${skillWanted}" to learn "${skillOffered}".`,
+          priority: 'Medium',
+          action_url: '/requests'
+        });
+      } catch (notifErr) {
+        console.error('Failed to create mock swap notification:', notifErr);
+      }
+
       setModalSuccess(true);
       setTimeout(() => {
         handleCloseModal();
@@ -146,6 +160,19 @@ export const BrowseSkillsPage: React.FC = () => {
         });
 
         if (error) throw error;
+
+        // Trigger notification for live mode
+        try {
+          await notificationService.createNotification(selectedTargetProfile.id, {
+            type: 'swap',
+            title: 'New Swap Proposal Received',
+            message: `${profile?.full_name || 'A swapper'} sent you a swap proposal: offering "${skillWanted}" to learn "${skillOffered}".`,
+            priority: 'Medium',
+            action_url: '/requests'
+          });
+        } catch (notifErr) {
+          console.error('Failed to create live swap notification:', notifErr);
+        }
 
         setModalSuccess(true);
         setTimeout(() => {

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
+import { notificationService } from '../lib/notificationService';
 import type { Profile, QualificationSession, SwapRequest } from '../types';
 import { 
   User, 
@@ -296,6 +297,20 @@ export const ProfilePage: React.FC = () => {
     } else {
       setSuccessMsg('Profile updated successfully!');
       setIsEditing(false);
+      
+      // Trigger notification
+      try {
+        await notificationService.createNotification(profile.id, {
+          type: 'profile',
+          title: 'Profile Updated Successfully',
+          message: 'Your profile details have been saved successfully.',
+          priority: 'Low',
+          action_url: '/profile'
+        });
+      } catch (notifErr) {
+        console.error('Failed to create profile update notification:', notifErr);
+      }
+
       setTimeout(() => setSuccessMsg(null), 3000);
     }
     setLoading(false);
@@ -338,6 +353,19 @@ export const ProfilePage: React.FC = () => {
     const allRequests: SwapRequest[] = JSON.parse(localStorage.getItem('skillswap-mock-requests') || '[]');
     allRequests.push(newRequest);
     localStorage.setItem('skillswap-mock-requests', JSON.stringify(allRequests));
+
+    // Trigger notification
+    try {
+      notificationService.createNotification(viewedProfile.id, {
+        type: 'swap',
+        title: 'New Swap Proposal Received',
+        message: `${profile.full_name || 'A swapper'} sent you a swap proposal: offering "${skillWanted}" to learn "${skillOffered}".`,
+        priority: 'Medium',
+        action_url: '/requests'
+      });
+    } catch (notifErr) {
+      console.error('Failed to create swap request notification:', notifErr);
+    }
 
     setModalSuccess(true);
     setTimeout(() => {

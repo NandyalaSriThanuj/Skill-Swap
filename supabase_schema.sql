@@ -182,9 +182,12 @@ create policy "Participants can review completed swaps"
 create table public.notifications (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
-  type text not null check (type in ('request_received', 'request_accepted', 'message_received', 'review_received')),
+  type text not null check (type in ('interview', 'swap', 'match', 'certificate', 'profile', 'system', 'request_received', 'request_accepted', 'message_received', 'review_received')),
   title text not null,
-  content text not null,
+  content text,
+  message text,
+  priority text default 'Medium' check (priority in ('High', 'Medium', 'Low')),
+  action_url text,
   is_read boolean default false not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -310,21 +313,27 @@ begin
   select full_name into mentor_name from public.profiles where id = new.mentor_id;
 
   -- Notify Learner
-  insert into public.notifications (user_id, type, title, content)
+  insert into public.notifications (user_id, type, title, content, message, priority, action_url)
   values (
     new.learner_id,
-    'request_accepted',
+    'swap',
     'Learning Session Created!',
-    'Your swap request is accepted. Join ' || coalesce(mentor_name, 'Partner') || ' in the learning room.'
+    'Your swap request is accepted. Join ' || coalesce(mentor_name, 'Partner') || ' in the learning room.',
+    'Your swap request is accepted. Join ' || coalesce(mentor_name, 'Partner') || ' in the learning room.',
+    'High',
+    '/session/' || new.room_id
   );
 
   -- Notify Mentor
-  insert into public.notifications (user_id, type, title, content)
+  insert into public.notifications (user_id, type, title, content, message, priority, action_url)
   values (
     new.mentor_id,
-    'request_accepted',
+    'swap',
     'Learning Session Created!',
-    'You accepted a swap request. Join ' || coalesce(learner_name, 'Partner') || ' in the learning room.'
+    'You accepted a swap request. Join ' || coalesce(learner_name, 'Partner') || ' in the learning room.',
+    'You accepted a swap request. Join ' || coalesce(learner_name, 'Partner') || ' in the learning room.',
+    'High',
+    '/session/' || new.room_id
   );
 
   return new;

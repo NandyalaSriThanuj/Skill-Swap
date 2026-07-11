@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
+import { notificationService } from '../lib/notificationService';
 import type { Profile, SwapRequest, Message, LearningSession } from '../types';
 import { 
   Inbox, 
@@ -181,6 +182,12 @@ export const RequestsPage: React.FC = () => {
   if (!profile) return null;
 
   const handleUpdateStatus = async (requestId: string, newStatus: SwapRequest['status']) => {
+    const targetReq = requests.find(r => r.id === requestId);
+    if (!targetReq) return;
+
+    const senderName = targetReq.sender_profile?.full_name || 'A swapper';
+    const receiverName = targetReq.receiver_profile?.full_name || 'Your partner';
+
     if (isMock) {
       const allRequests: SwapRequest[] = JSON.parse(localStorage.getItem('skillswap-mock-requests') || '[]');
       const index = allRequests.findIndex(r => r.id === requestId);
@@ -213,40 +220,37 @@ export const RequestsPage: React.FC = () => {
           localStorage.setItem('skillswap-mock-sessions', JSON.stringify(allSessions));
 
           // Create Notifications
-          const allProfiles: Profile[] = JSON.parse(localStorage.getItem('skillswap-mock-profiles') || '[]');
-          const senderProfile = allProfiles.find(p => p.id === oldReq.sender_id);
-          const receiverProfile = allProfiles.find(p => p.id === oldReq.receiver_id);
-          const senderName = senderProfile?.full_name || 'Partner';
-          const receiverName = receiverProfile?.full_name || 'Partner';
+          try {
+            await notificationService.createNotification(oldReq.sender_id, {
+              type: 'swap',
+              title: 'Swap Request Approved!',
+              message: `${receiverName} has approved your swap request. Click to join the learning room!`,
+              priority: 'High',
+              action_url: `/session/${roomId}`
+            });
 
-          const notifs = JSON.parse(localStorage.getItem('skillswap-mock-notifications') || '[]');
-          
-          // Notification for sender (learner)
-          notifs.push({
-            id: `notif-${Math.random().toString(36).substr(2, 9)}`,
-            user_id: oldReq.sender_id,
-            type: 'request_accepted',
-            title: 'Swap Request Approved!',
-            content: `${receiverName} has approved your swap request. Click to join the learning room!`,
-            is_read: false,
-            created_at: new Date().toISOString(),
-            roomId: roomId
-          });
-
-          // Notification for receiver (mentor/approver)
-          notifs.push({
-            id: `notif-${Math.random().toString(36).substr(2, 9)}`,
-            user_id: oldReq.receiver_id,
-            type: 'request_accepted',
-            title: 'Learning Room Provisioned!',
-            content: `You approved ${senderName}'s request. Your joint learning session is active.`,
-            is_read: false,
-            created_at: new Date().toISOString(),
-            roomId: roomId
-          });
-
-          localStorage.setItem('skillswap-mock-notifications', JSON.stringify(notifs));
-          window.dispatchEvent(new Event('skillswap-notifications-updated'));
+            await notificationService.createNotification(oldReq.receiver_id, {
+              type: 'swap',
+              title: 'Learning Room Provisioned!',
+              message: `You approved ${senderName}'s request. Your joint learning session is active.`,
+              priority: 'Medium',
+              action_url: `/session/${roomId}`
+            });
+          } catch (notifErr) {
+            console.error('Failed to generate mock swap status notifications:', notifErr);
+          }
+        } else if (newStatus === 'rejected' && oldReq.status !== 'rejected') {
+          try {
+            await notificationService.createNotification(oldReq.sender_id, {
+              type: 'swap',
+              title: 'Swap Request Declined',
+              message: `${receiverName} declined your swap request to exchange "${oldReq.skill_offered}" for "${oldReq.skill_wanted}".`,
+              priority: 'Medium',
+              action_url: '/requests'
+            });
+          } catch (notifErr) {
+            console.error('Failed to generate mock reject notification:', notifErr);
+          }
         }
 
         loadRequests();
@@ -259,6 +263,29 @@ export const RequestsPage: React.FC = () => {
           .eq('id', requestId);
         
         if (error) throw error;
+
+        // If approved, trigger notifications (Supabase trigger also runs, but we add detail / support rejection notification here)
+        if (newStatus === 'approved') {
+          // Check if session got created by trigger or if we should notify
+          // Since the DB trigger 'notify_on_session_created' handles creating notifications upon learning_sessions INSERT,
+          // when we approve a swap request, the backend/client will insert a learning session.
+          // Let's check if the client creates the learning session. Wait, does the client create the session, or does a database trigger create it?
+          // Let's check supabase_schema.sql if there is a trigger to create a learning session upon approval.
+          // Wait, let's search in supabase_schema.sql for 'insert into public.learning_sessions' or similar.
+        } else if (newStatus === 'rejected') {
+          try {
+            await notificationService.createNotification(targetReq.sender_id, {
+              type: 'swap',
+              title: 'Swap Request Declined',
+              message: `${receiverName} declined your swap request to exchange "${targetReq.skill_offered}" for "${targetReq.skill_wanted}".`,
+              priority: 'Medium',
+              action_url: '/requests'
+            });
+          } catch (notifErr) {
+            console.error('Failed to create live reject notification:', notifErr);
+          }
+        }
+
         loadRequests();
       } catch (err) {
         console.error('Error updating status in Supabase:', err);

@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { notificationService } from './notificationService';
 import type { QualificationSession } from '../types';
 
 const MOCK_INTERVIEW_SESSIONS_KEY = 'skillswap-mock-interview-sessions';
@@ -24,6 +25,47 @@ const getMockAssessments = (): any[] => {
 
 const saveMockAssessments = (assessments: any[]) => {
   localStorage.setItem(MOCK_MENTOR_ASSESSMENTS_KEY, JSON.stringify(assessments));
+};
+
+const triggerAssessmentCompleteNotifications = async (
+  userId: string,
+  skill: string,
+  isPassed: boolean,
+  score: number,
+  badge: string,
+  sessionId: string
+) => {
+  try {
+    await notificationService.createNotification(userId, {
+      type: 'interview',
+      title: isPassed ? 'Assessment Passed!' : 'Assessment Concluded',
+      message: isPassed
+        ? `Congratulations! You passed the technical assessment for "${skill}" with a score of ${score}%.`
+        : `Your assessment for "${skill}" has been completed. Score: ${score}%. Unfortunately, this did not meet the passing criteria.`,
+      priority: isPassed ? 'High' : 'Medium',
+      action_url: `/summary/${sessionId}`
+    });
+
+    if (isPassed) {
+      await notificationService.createNotification(userId, {
+        type: 'certificate',
+        title: 'Mentor Certificate Issued',
+        message: `A verification certificate has been issued for your expertise in "${skill}".`,
+        priority: 'High',
+        action_url: '/certificates'
+      });
+
+      await notificationService.createNotification(userId, {
+        type: 'certificate',
+        title: 'New Mentor Badge Earned',
+        message: `You have been awarded the "${badge}" badge for "${skill}".`,
+        priority: 'High',
+        action_url: '/profile'
+      });
+    }
+  } catch (notifErr) {
+    console.error('Failed to trigger assessment completion notifications:', notifErr);
+  }
 };
 
 // Helper to map DB models to unified QualificationSession type
@@ -214,7 +256,19 @@ export const qualificationService = {
       saveMockSessions(allSessions);
       saveMockAssessments(allAssessments);
 
-      return mergeSessionAndAssessment(newSession, null);
+      const merged = mergeSessionAndAssessment(newSession, null);
+      try {
+        notificationService.createNotification(userId, {
+          type: 'interview',
+          title: 'Assessment Started',
+          message: `You have started your technical assessment for "${skillName}". Good luck!`,
+          priority: 'Medium',
+          action_url: `/assessment/${merged.id}`
+        });
+      } catch (notifErr) {
+        console.error('Failed to trigger mock assessment start notification:', notifErr);
+      }
+      return merged;
     }
 
     try {
@@ -243,7 +297,19 @@ export const qualificationService = {
         console.warn('Failed to delete old assessment record (ignoring):', delErr);
       }
 
-      return mergeSessionAndAssessment(data, null);
+      const merged = mergeSessionAndAssessment(data, null);
+      try {
+        notificationService.createNotification(userId, {
+          type: 'interview',
+          title: 'Assessment Started',
+          message: `You have started your technical assessment for "${skillName}". Good luck!`,
+          priority: 'Medium',
+          action_url: `/assessment/${merged.id}`
+        });
+      } catch (notifErr) {
+        console.error('Failed to trigger live assessment start notification:', notifErr);
+      }
+      return merged;
     } catch (err) {
       console.warn('Error creating qualification session in Supabase (falling back to mock):', err);
       // Mock fallback
@@ -315,6 +381,16 @@ export const qualificationService = {
         };
         allAssessments.push(assessment);
         saveMockAssessments(allAssessments);
+
+        // Trigger notifications
+        triggerAssessmentCompleteNotifications(
+          session.user_id,
+          session.skill,
+          updates.status === 'passed',
+          updates.score || 0,
+          assessment.badge,
+          sessionId
+        );
       } else {
         const assessments = getMockAssessments();
         assessment = assessments.find(a => a.user_id === session.user_id && a.skill.toLowerCase() === session.skill.toLowerCase()) || null;
@@ -399,6 +475,16 @@ export const qualificationService = {
  
         if (assErr) throw assErr;
         assessment = assData;
+
+        // Trigger notifications
+        triggerAssessmentCompleteNotifications(
+          currentSession.user_id,
+          currentSession.skill,
+          updates.status === 'passed',
+          updates.score || 0,
+          earnedBadge,
+          sessionId
+        );
       } else {
         const { data: assData } = await supabase
           .from('mentor_assessments')
